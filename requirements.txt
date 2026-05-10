@@ -6,3 +6,4 @@ duckdb
 pydantic-ai
 google-generativeai
 scikit-learn
+joblib
