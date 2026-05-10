@@ -527,8 +527,22 @@ def draw_engine_monitor(sensor_status_dict):
 # =========================================================
 @st.cache_resource
 def get_connection():
-    return duckdb.connect('cmapss.db', read_only=True)
- 
+    # 1. 파일명 정의
+    db_file = 'cmapss.db'
+    
+    # 2. 파일이 존재하는지 먼저 확인
+    if not os.path.exists(db_file):
+        # 만약 배포 환경에서 경로가 꼬였다면 현재 경로의 파일들을 출력해서 디버깅
+        st.error(f"DB 파일을 찾을 수 없습니다. 현재 디렉토리 파일: {os.listdir('.')}")
+        return None
+        
+    try:
+        # 파일이 존재할 때만 연결 시도
+        return duckdb.connect(db_file, read_only=True)
+    except Exception as e:
+        st.error(f"DB 연결 오류: {e}")
+        return None
+    
 @st.cache_data
 def load_summary(subset: str, model_name: str):
     path = f"saved_models/summary_{model_name}_{subset}.csv"
