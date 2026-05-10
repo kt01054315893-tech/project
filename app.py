@@ -527,7 +527,7 @@ def draw_engine_monitor(sensor_status_dict):
 # =========================================================
 @st.cache_resource
 def get_connection():
-    return duckdb.connect('cmapss.db', read_only=True)
+    return os.path.join(os.path.dirname(__file__), 'cmapss.db')
  
 @st.cache_data
 def load_summary(subset: str, model_name: str):
