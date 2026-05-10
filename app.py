@@ -810,6 +810,7 @@ with tab_overview:
         st.plotly_chart(fig_dist, use_container_width=True)
  
     else:
+        st.write(os.listdir("saved_models"))
         st.info("데이터를 불러올 수 없습니다. DB 및 모델 파일을 확인하세요.")
  
 # =========================================================
