@@ -885,7 +885,7 @@ with tab_overview:
         # 필터 & 정렬 UI
         f1, f2, f3, f4 = st.columns([1, 1, 1, 1])
         with f1:
-            filter_status = st.selectbox("상태 필터", ["전체", "위험만", "주의만", "정상만"], key="filter_status")
+            filter_status = st.selectbox("상태 필터", ["전체", "위험", "주의", "정상"], key="filter_status")
         with f2:
             sort_opt = st.selectbox("정렬", ["잔여수명 낮은순", "잔여수명 높은순", "엔진번호 오름차순", "엔진번호 내림차순"], key="sort_opt")
         with f3:
