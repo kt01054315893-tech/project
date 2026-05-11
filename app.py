@@ -1231,7 +1231,7 @@ with tab_engine:
  
             # ── 부품별 이상 설명 + 센서 궤적 ──
             st.markdown('<p class="section-header">부품별 센서 궤적 및 권고 조치</p>', unsafe_allow_html=True)
-            st.caption("📊 부품별 이상 징후 점수는 최근 10사이클 추세 + 잔여수명 보정 기반입니다. 기준: '0~50% 정상' / '51~65% 관찰' / '66%+ 주의'. 아래 그래프는 해당 부품 핵심 센서의 전체 운전 이력입니다.")
+            st.caption("📊 부품별 이상 징후 점수는 최근 10사이클 추세 + 잔여수명 보정 기반입니다. 기준: 0 - 50% 정상 / 51 - 65% 관찰 / 66%+ 주의. 아래 그래프는 해당 부품 핵심 센서의 전체 운전 이력입니다.")
 
             if not df_raw.empty and useful_cols:
                 # dom_part: Z-score 기반 위험도로 자체 계산 (get_engine_sensor_diagnosis 미사용)
