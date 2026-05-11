@@ -7,3 +7,4 @@ pydantic-ai
 google-generativeai
 scikit-learn
 joblib
+nest-asyncio
