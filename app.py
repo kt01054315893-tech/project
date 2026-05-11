@@ -9,6 +9,9 @@ import duckdb
 import re
 import asyncio
 from datetime import datetime
+def switch_to_tab(tab_index: int):
+    """탭 전환 신호 저장 — rerun 후 해당 탭이 기본 선택됨."""
+    st.session_state["active_tab"] = tab_index
 try:
     import shap
     SHAP_AVAILABLE = True
@@ -30,25 +33,65 @@ st.set_page_config(
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
- 
+
 html, body, [class*="css"] {
     font-family: 'Noto Sans KR', sans-serif;
+    color: #e6edf3;
 }
- 
+
+/* ── 상단 헤더/툴바 완전 숨김 ── */
+[data-testid="stHeader"],
+[data-testid="stToolbar"],
+header[data-testid="stHeader"],
+.stDeployButton,
+#MainMenu { visibility: hidden; height: 0; }
+.block-container { padding-top: 1rem !important; }
+
 /* ── 전체 배경 ── */
 .stApp { background-color: #0d1117; }
- 
+
 /* ── 사이드바 ── */
 [data-testid="stSidebar"] {
     background-color: #161b22;
     border-right: 1px solid #21262d;
+    min-width: 400px !important;
+    width: 400px;          /* 기본 너비 — 사용자가 드래그로 조절 가능 */
 }
 [data-testid="stSidebar"] .stMarkdown h3 {
     color: #e6edf3;
-    font-size: 0.85rem;
-    letter-spacing: 0.08em;
+    font-size: 0.9rem;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
-    font-weight: 500;
+    font-weight: 600;
+}
+/* 사이드바 내 텍스트 가독성 */
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] label,
+[data-testid="stSidebar"] .stMarkdown {
+    color: #c9d1d9 !important;
+    font-size: 0.95rem;
+}
+[data-testid="stSidebar"] .stMarkdown h3 {
+    font-size: 1.05rem !important;
+    color: #e6edf3 !important;
+    font-weight: 600;
+}
+[data-testid="stSidebar"] button {
+    font-size: 0.92rem !important;
+    white-space: normal !important;
+    height: auto !important;
+    line-height: 1.5 !important;
+    padding: 8px 12px !important;
+}
+[data-testid="stSidebar"] [data-testid="stChatInput"] textarea {
+    font-size: 0.95rem !important;
+}
+[data-testid="stSidebar"] [data-testid="stChatMessage"] {
+    font-size: 0.92rem !important;
+}
+[data-testid="stSidebar"] select,
+[data-testid="stSidebar"] input[type="number"] {
+    font-size: 0.95rem !important;
 }
  
 /* ── 탭 스타일 ── */
@@ -244,8 +287,18 @@ html, body, [class*="css"] {
     border-radius: 8px;
     padding: 14px 18px;
 }
-[data-testid="stMetricLabel"] { color: #8b949e !important; font-size: 0.78rem !important; }
-[data-testid="stMetricValue"] { color: #e6edf3 !important; font-family: 'JetBrains Mono', monospace; font-size: 1.4rem !important; }
+[data-testid="stMetricLabel"] { color: #c9d1d9 !important; font-size: 0.82rem !important; font-weight: 500 !important; }
+[data-testid="stMetricValue"] { color: #e6edf3 !important; font-family: 'JetBrains Mono', monospace; font-size: 1.5rem !important; font-weight: 700 !important; }
+
+/* ── 메인 텍스트 가독성 ── */
+p, span, div, li { color: #e6edf3; }
+.stMarkdown p { color: #c9d1d9 !important; font-size: 0.9rem; line-height: 1.7; }
+h1, h2, h3 { color: #e6edf3 !important; }
+caption, .caption { color: #8b949e !important; }
+
+/* ── expander 가독성 ── */
+[data-testid="stExpander"] summary { color: #c9d1d9 !important; font-size: 0.9rem; }
+[data-testid="stExpander"] p { color: #c9d1d9 !important; }
  
 /* ── 공통 카드 컨테이너 ── */
 .info-card {
@@ -274,6 +327,10 @@ html, body, [class*="css"] {
 .stSelectbox > div, .stNumberInput > div { background: #161b22 !important; }
 </style>
 """, unsafe_allow_html=True)
+
+# active_tab: 탭 전환 세션 상태 초기화
+if "active_tab" not in st.session_state:
+    st.session_state["active_tab"] = 0
  
 # =========================================================
 # 2. 상수 & 매핑
@@ -306,11 +363,24 @@ SENSOR_META = {
 }
 
 # 데이터셋별 유효 센서
+# 데이터셋별 유효 센서 전체 목록
+# FD001: 14개 (상수센서 s_1,5,6,10,16,18,19 제외)
+# FD002: 20개 (s_16 제외)
+# FD003: 15개 (상수센서 s_1,5,6,16,18,19 제외, s_6은 FD003에 포함)
+# FD004: 15개 (상수센서 s_1,5,6,16,18,19 제외)
 USEFUL_SENSORS = {
     "FD001": [2, 3, 4, 7, 8, 9, 11, 12, 13, 14, 15, 17, 20, 21],
     "FD002": [1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20, 21],
     "FD003": [2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 20, 21],
     "FD004": [2, 3, 4, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 20, 21],
+}
+
+# 데이터셋별 핵심 센서 (핵심 센서 N개 선택 버튼용 — 각 데이터셋의 유효 전체 목록)
+RECOMMENDED_SENSORS = {
+    "FD001": [f"s_{i}" for i in [2, 3, 4, 7, 8, 9, 11, 12, 13, 14, 15, 17, 20, 21]],            # 14개
+    "FD002": [f"s_{i}" for i in [1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20, 21]],  # 20개
+    "FD003": [f"s_{i}" for i in [2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 20, 21]],    # 16개
+    "FD004": [f"s_{i}" for i in [2, 3, 4, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 20, 21]],       # 15개
 }
  
 CLUSTER_MAP = {
@@ -519,7 +589,7 @@ def draw_engine_monitor(sensor_status_dict):
                 marker=dict(size=35, color=color, opacity=0.7,
                             line=dict(width=3, color='white')),
                 name=loc['label'],
-                hovertext=f"<b>{loc['label']}</b><br>상태: {color}",
+                hovertext=f"<b>{loc['label']}</b><br>상태: {'⚠ 이상' if color == '#f85149' else '관찰' if color == '#d29922' else '정상'}",
                 hoverinfo="text"
             ))
 
@@ -554,7 +624,7 @@ def get_connection():
     except Exception as e:
         st.error(f"DB 연결 오류: {e}")
         return None
-    
+ 
 @st.cache_data
 def load_summary(subset: str, model_name: str):
     path = f"saved_models/summary_{model_name}_{subset}.csv"
@@ -725,12 +795,16 @@ with st.sidebar:
 # =========================================================
 # 7. 메인 탭 구성
 # =========================================================
-tab_overview, tab_engine, tab_sensor,  tab_history = st.tabs([
+# active_tab 세션으로 기본 탭 선택
+_default_tab = st.session_state.get("active_tab", 0)
+
+tab_overview, tab_engine, tab_sensor, tab_history = st.tabs([
     "🏠 전체 현황",
     "🔍 엔진 상세",
     "📡 센서 분석",
-    "📋 점검 이력(즉시점검 접수)"
+    "📋 점검 이력 & 즉시접수",
 ])
+
  
 # =========================================================
 # 탭 1: 전체 현황
@@ -758,45 +832,88 @@ with tab_overview:
             </div>""", unsafe_allow_html=True)
  
         # ── 요약 지표 + 막대그래프 ──
-        st.markdown('<p class="section-header">오늘의 엔진 현황 요약</p>', unsafe_allow_html=True)
+        # ── 요약 지표 (색상 배경 카드) ──
+        st.markdown('<p class="section-header">엔진 현황 요약</p>', unsafe_allow_html=True)
 
-        left_col, right_col = st.columns([1, 1])
-        with left_col:
-            m1, m2 = st.columns(2)
-            m3, m4 = st.columns(2)
-            m1.metric("전체 엔진", f"{total}대")
-            m2.metric("🔴 즉시 점검", f"{n_danger}대")
-            m3.metric("🟡 점검 예약", f"{n_warning}대")
-            m4.metric("🟢 정상 운행", f"{n_normal}대")
+        sc1, sc2, sc3, sc4 = st.columns(4)
+        with sc1:
+            st.markdown(f'''<div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:18px 20px;">
+                <div style="color:#8b949e;font-size:0.82rem;margin-bottom:6px;font-weight:500;">전체 엔진</div>
+                <div style="font-size:2rem;font-weight:700;color:#e6edf3;font-family:JetBrains Mono;">{total}<span style="font-size:1rem;color:#8b949e;margin-left:4px;">대</span></div>
+            </div>''', unsafe_allow_html=True)
+        with sc2:
+            st.markdown(f'''<div style="background:rgba(248,81,73,0.12);border:1px solid rgba(248,81,73,0.5);border-radius:10px;padding:18px 20px;">
+                <div style="color:#f85149;font-size:0.82rem;margin-bottom:6px;font-weight:500;">🔴 즉시 점검</div>
+                <div style="font-size:2rem;font-weight:700;color:#f85149;font-family:JetBrains Mono;">{n_danger}<span style="font-size:1rem;margin-left:4px;">대</span></div>
+            </div>''', unsafe_allow_html=True)
+        with sc3:
+            st.markdown(f'''<div style="background:rgba(210,153,34,0.12);border:1px solid rgba(210,153,34,0.5);border-radius:10px;padding:18px 20px;">
+                <div style="color:#d29922;font-size:0.82rem;margin-bottom:6px;font-weight:500;">🟡 점검 예약</div>
+                <div style="font-size:2rem;font-weight:700;color:#d29922;font-family:JetBrains Mono;">{n_warning}<span style="font-size:1rem;margin-left:4px;">대</span></div>
+            </div>''', unsafe_allow_html=True)
+        with sc4:
+            st.markdown(f'''<div style="background:rgba(63,185,80,0.12);border:1px solid rgba(63,185,80,0.5);border-radius:10px;padding:18px 20px;">
+                <div style="color:#3fb950;font-size:0.82rem;margin-bottom:6px;font-weight:500;">🟢 정상 운행</div>
+                <div style="font-size:2rem;font-weight:700;color:#3fb950;font-family:JetBrains Mono;">{n_normal}<span style="font-size:1rem;margin-left:4px;">대</span></div>
+            </div>''', unsafe_allow_html=True)
 
-        with right_col:
-            fig_summary_bar = go.Figure(go.Bar(
-                x=["즉시 점검", "점검 예약", "정상 운행"],
-                y=[n_danger, n_warning, n_normal],
-                marker_color=["#f85149", "#d29922", "#3fb950"],
-                text=[f"{n_danger}대", f"{n_warning}대", f"{n_normal}대"],
-                textposition="outside",
-                textfont=dict(color="#c9d1d9", size=13),
-            ))
-            fig_summary_bar.update_layout(
-                template="plotly_dark",
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(0,0,0,0)",
-                height=200,
-                margin=dict(l=0, r=0, t=10, b=0),
-                font=dict(family="Noto Sans KR"),
-                showlegend=False,
-                yaxis=dict(showticklabels=False, showgrid=False),
-                xaxis=dict(showgrid=False),
-            )
-            st.plotly_chart(fig_summary_bar, use_container_width=True)
- 
+        # ── 잔여 수명 분포 (요약 바로 아래) ──
+        st.markdown('<p class="section-header">잔여 수명 분포</p>', unsafe_allow_html=True)
+        fig_dist = go.Figure()
+        fig_dist.add_trace(go.Histogram(
+            x=latest['pred_rul'], nbinsx=20,
+            marker_color='#58a6ff', opacity=0.75, name='엔진 수'
+        ))
+        fig_dist.add_vline(x=30, line_dash="dash", line_color="#f85149",
+                           annotation_text="위험(30)", annotation_position="top right",
+                           annotation_font_color="#f85149")
+        fig_dist.add_vline(x=60, line_dash="dash", line_color="#d29922",
+                           annotation_text="주의(60)", annotation_position="top right",
+                           annotation_font_color="#d29922")
+        fig_dist.update_layout(
+            template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            xaxis_title="잔여 수명 (사이클)", yaxis_title="엔진 수",
+            height=210, margin=dict(l=0, r=0, t=20, b=0),
+            font=dict(family="Noto Sans KR", color="#c9d1d9"),
+        )
+        st.plotly_chart(fig_dist, use_container_width=True)
+
         # ── 엔진 상태 카드 리스트 ──
         st.markdown('<p class="section-header">엔진별 상태 카드</p>', unsafe_allow_html=True)
- 
-        # 위험 → 주의 → 정상 순 정렬
-        latest_sorted = latest.sort_values('pred_rul').reset_index(drop=True)
- 
+
+        # 필터 & 정렬 UI
+        f1, f2, f3, f4 = st.columns([1, 1, 1, 1])
+        with f1:
+            filter_status = st.selectbox("상태 필터", ["전체", "위험만", "주의만", "정상만"], key="filter_status")
+        with f2:
+            sort_opt = st.selectbox("정렬", ["잔여수명 낮은순", "잔여수명 높은순", "엔진번호 오름차순", "엔진번호 내림차순"], key="sort_opt")
+        with f3:
+            uid_min = st.number_input("엔진번호 시작", min_value=int(latest['unit_nr'].min()),
+                                      max_value=int(latest['unit_nr'].max()),
+                                      value=int(latest['unit_nr'].min()), key="uid_min")
+        with f4:
+            uid_max = st.number_input("엔진번호 끝", min_value=int(latest['unit_nr'].min()),
+                                      max_value=int(latest['unit_nr'].max()),
+                                      value=int(latest['unit_nr'].max()), key="uid_max")
+
+        # 필터 적용
+        filtered = latest[(latest['unit_nr'] >= uid_min) & (latest['unit_nr'] <= uid_max)].copy()
+        if filter_status == "위험만":   filtered = filtered[filtered['pred_rul'] < 30]
+        elif filter_status == "주의만": filtered = filtered[(filtered['pred_rul'] >= 30) & (filtered['pred_rul'] < 60)]
+        elif filter_status == "정상만": filtered = filtered[filtered['pred_rul'] >= 60]
+
+        # 정렬 적용
+        sort_map = {
+            "잔여수명 낮은순":  ('pred_rul', True),
+            "잔여수명 높은순":  ('pred_rul', False),
+            "엔진번호 오름차순": ('unit_nr', True),
+            "엔진번호 내림차순": ('unit_nr', False),
+        }
+        s_col, s_asc = sort_map.get(sort_opt, ('pred_rul', True))
+        latest_sorted = filtered.sort_values(s_col, ascending=s_asc).reset_index(drop=True)
+        st.caption(f"총 {len(latest_sorted)}대 표시 중 (전체 {total}대)")
+
+        max_rul = int(latest['pred_rul'].max()) or 1
         cols_per_row = 3
         for i in range(0, len(latest_sorted), cols_per_row):
             row_data = latest_sorted.iloc[i:i+cols_per_row]
@@ -804,10 +921,9 @@ with tab_overview:
             for col, (_, row) in zip(cols, row_data.iterrows()):
                 rul = int(row['pred_rul'])
                 status_name, css_class, color, icon, action = get_rul_status(rul)
-                max_rul = int(latest['pred_rul'].max()) or 1
                 pct = min(100, int(rul / max_rul * 100))
                 period = rul_to_period(rul)
- 
+
                 with col:
                     st.markdown(f"""
                     <div class="status-card {css_class}">
@@ -823,35 +939,102 @@ with tab_overview:
                         <div class="action-text">→ {action}</div>
                     </div>
                     """, unsafe_allow_html=True)
-                    # 상세 보기 버튼 (7번 피드백: 클릭 시 해당 엔진 번호로 이동)
-                    if st.button(f"상세 보기 →", key=f"detail_{int(row['unit_nr'])}_{i}", use_container_width=True):
-                        st.session_state["jump_unit"] = int(row['unit_nr'])
-                        st.rerun()
- 
-        # ── 전체 분포 차트 ──
-        st.markdown('<p class="section-header">잔여 수명 분포</p>', unsafe_allow_html=True)
-        fig_dist = go.Figure()
-        fig_dist.add_trace(go.Histogram(
-            x=latest['pred_rul'],
-            nbinsx=20,
-            marker_color='#58a6ff',
-            opacity=0.8,
-            name='엔진 수'
-        ))
-        fig_dist.add_vline(x=30, line_dash="dash", line_color="#f85149", annotation_text="위험 기준 (30)", annotation_position="top right")
-        fig_dist.add_vline(x=60, line_dash="dash", line_color="#d29922", annotation_text="주의 기준 (60)", annotation_position="top right")
-        fig_dist.update_layout(
-            template="plotly_dark",
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
-            xaxis_title="잔여 수명 (사이클)",
-            yaxis_title="엔진 수",
-            height=300,
-            margin=dict(l=0, r=0, t=20, b=0),
-            font=dict(family="Noto Sans KR"),
-        )
-        st.plotly_chart(fig_dist, use_container_width=True)
- 
+                    with st.expander("상세 보기 →", expanded=False):
+                        _uid  = int(row['unit_nr'])
+                        _rul  = int(row['pred_rul'])
+                        _period  = rul_to_period(_rul)
+                        _flights = rul_to_flights(_rul)
+                        _status_name, _css, _c, _icon, _action = get_rul_status(_rul)
+
+                        # ── 잔여 수명 게이지 바 ──
+                        _max_rul = int(latest['pred_rul'].max()) or 1
+                        _pct     = min(100, int(_rul / _max_rul * 100))
+
+                        st.markdown(f"""
+<div style="background:#0d1117;border:1px solid #21262d;border-radius:8px;padding:14px 16px;margin-bottom:10px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+    <span style="color:#8b949e;font-size:0.78rem;">잔여 수명 ({_pct}%)</span>
+    <span style="color:{_c};font-size:0.78rem;font-weight:600;">{_icon} {_status_name}</span>
+  </div>
+  <div style="background:#21262d;border-radius:4px;height:8px;margin-bottom:8px;">
+    <div style="width:{_pct}%;background:{_c};height:8px;border-radius:4px;"></div>
+  </div>
+  <div style="display:flex;gap:20px;">
+    <div><div style="color:#8b949e;font-size:0.72rem;">잔여 사이클</div>
+         <div style="color:{_c};font-size:1.3rem;font-weight:700;">{_rul}</div></div>
+    <div><div style="color:#8b949e;font-size:0.72rem;">예상 기간</div>
+         <div style="color:#c9d1d9;font-size:0.9rem;">{_period}</div></div>
+    <div><div style="color:#8b949e;font-size:0.72rem;">잔여 운항</div>
+         <div style="color:#c9d1d9;font-size:0.9rem;">{_flights}</div></div>
+  </div>
+</div>""", unsafe_allow_html=True)
+
+                        # ── 센서 이상 분석 ──
+                        try:
+                            _df_e = load_sensor_data(f"test_{subset_choice.lower()}", _uid)
+                            _useful_e = [f"s_{i}" for i in USEFUL_SENSORS.get(subset_choice, [])]
+
+                            if not _df_e.empty:
+                                # 부품별 이상 센서 찾기
+                                _anomaly_parts = {}
+                                for _pn, _ps in PART_MAP.items():
+                                    _avail_e = [s for s in _ps if s in _df_e.columns and s in _useful_e]
+                                    if not _avail_e:
+                                        continue
+                                    _scores_e = []
+                                    for _s in _avail_e:
+                                        _col_, _lbl_, _sc_ = detect_sensor_status(_df_e[_s], window=10)
+                                        _scores_e.append((_s, _lbl_, _sc_, _col_))
+                                    _max_sc = max(_scores_e, key=lambda x: x[2])
+                                    _anomaly_parts[_pn] = _max_sc
+
+                                # 위험도 높은 부품 순 정렬
+                                _sorted_parts = sorted(_anomaly_parts.items(), key=lambda x: x[1][2], reverse=True)
+
+                                st.markdown('<div style="color:#8b949e;font-size:0.75rem;margin-bottom:6px;font-weight:600;letter-spacing:0.05em;">부품별 이상 징후</div>', unsafe_allow_html=True)
+                                _part_html = ""
+                                for _pname, (_sname, _slbl, _ssc, _scol) in _sorted_parts[:5]:
+                                    _bar_w = min(100, _ssc)
+                                    _sensor_kr = SENSOR_META.get(_sname, {}).get('name', _sname)
+                                    _part_html += f"""
+<div style="margin-bottom:8px;">
+  <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+    <span style="color:#c9d1d9;font-size:0.8rem;">{_pname}</span>
+    <span style="color:{_scol};font-size:0.78rem;font-weight:600;">{_slbl} ({_ssc}%)</span>
+  </div>
+  <div style="background:#21262d;border-radius:3px;height:5px;">
+    <div style="width:{_bar_w}%;background:{_scol};height:5px;border-radius:3px;"></div>
+  </div>
+  <div style="color:#6e7681;font-size:0.7rem;margin-top:2px;">주요 센서: {_sensor_kr}</div>
+</div>"""
+                                st.markdown(f'<div style="background:#0d1117;border:1px solid #21262d;border-radius:8px;padding:12px 14px;margin-bottom:10px;">{_part_html}</div>', unsafe_allow_html=True)
+
+                                # 권고 조치
+                                _dom_part = _sorted_parts[0][0] if _sorted_parts else None
+                                _part_actions_exp = {
+                                    "HPC":            "HPC 압축기 블레이드 점검 · 압축기 세정(Water Wash)",
+                                    "팬 시스템":       "팬 블레이드 균열·마모 점검 · FOD 검사",
+                                    "LPC":            "LPC 블레이드 간극 측정 · 시일 상태 확인",
+                                    "터빈 (LPT/HPT)": "터빈 블레이드 열손상 점검 · 냉각 블리드 유량 측정",
+                                    "코어":            "코어 속도 센서 교정 · 엔진 압력비 재측정",
+                                }
+                                _rec_action = _part_actions_exp.get(_dom_part, "전체 보어스코프 검사 실시")
+                                st.markdown(f"""
+<div style="background:rgba(248,81,73,0.08);border:1px solid rgba(248,81,73,0.25);border-radius:8px;padding:10px 14px;">
+  <div style="color:#f85149;font-size:0.75rem;font-weight:600;margin-bottom:4px;">📋 권고 조치</div>
+  <div style="color:#c9d1d9;font-size:0.82rem;">{_rec_action}</div>
+</div>""" if _css == "danger" else f"""
+<div style="background:rgba(210,153,34,0.08);border:1px solid rgba(210,153,34,0.25);border-radius:8px;padding:10px 14px;">
+  <div style="color:#d29922;font-size:0.75rem;font-weight:600;margin-bottom:4px;">📋 권고 조치</div>
+  <div style="color:#c9d1d9;font-size:0.82rem;">{_rec_action}</div>
+</div>""" if _css == "warning" else f"""
+<div style="background:rgba(63,185,80,0.08);border:1px solid rgba(63,185,80,0.25);border-radius:8px;padding:10px 14px;">
+  <div style="color:#3fb950;font-size:0.75rem;font-weight:600;margin-bottom:4px;">✅ 상태</div>
+  <div style="color:#c9d1d9;font-size:0.82rem;">정상 운행 가능. 정기 모니터링 유지.</div>
+</div>""", unsafe_allow_html=True)
+                        except Exception:
+                            st.caption("센서 데이터를 불러올 수 없습니다.")
+
     else:
         st.info("데이터를 불러올 수 없습니다. DB 및 모델 파일을 확인하세요.")
  
@@ -879,18 +1062,48 @@ with tab_engine:
  
             # ── 엔진 상태 헤더 ──
             st.markdown(f'<p class="section-header">엔진 #{unit_id} 현재 상태 · {subset_choice}</p>', unsafe_allow_html=True)
- 
+
+            # 현재까지 총 사이클 조회
+            _df_cyc = load_sensor_data(f"test_{subset_choice.lower()}", unit_id)
+            _total_cycles = int(_df_cyc['time_cycles'].max()) if not _df_cyc.empty else 0
+
             h1, h2, h3, h4 = st.columns(4)
+            # 상태별 배경색 (f-string 밖에서 정의)
+            _status_bg  = {"danger": "rgba(248,81,73,0.18)",  "warning": "rgba(210,153,34,0.18)",  "normal": "rgba(63,185,80,0.15)"}
+            _status_brd = {"danger": "rgba(248,81,73,0.5)",   "warning": "rgba(210,153,34,0.5)",   "normal": "rgba(63,185,80,0.4)"}
+            _bg  = _status_bg.get(css_class, "#161b22")
+            _brd = _status_brd.get(css_class, "#21262d")
+            # 공통 카드 스타일 — 높이·패딩·폰트 크기 완전 통일
+            _card_base = "border-radius:8px;padding:20px 22px;height:110px;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;"
+            _lbl_style = "color:#8b949e;font-size:0.78rem;margin-bottom:8px;font-weight:500;"
+            _val_style = "font-size:1.8rem;font-weight:800;font-family:'JetBrains Mono',monospace;line-height:1;"
+            _sub_style = "color:#8b949e;font-size:0.72rem;margin-top:6px;"
+
             with h1:
                 st.markdown(f"""
-                <div style="background:#161b22;border:1px solid #21262d;border-left:4px solid {color};border-radius:8px;padding:16px 18px;">
-                    <div style="color:#8b949e;font-size:0.75rem;margin-bottom:4px;">종합 상태</div>
-                    <div style="font-size:1.6rem;font-weight:700;color:{color};">{icon} {status_name}</div>
+                <div style="background:#161b22;border:1px solid #21262d;{_card_base}">
+                    <div style="{_lbl_style}">엔진 번호</div>
+                    <div style="{_val_style}color:#e6edf3;">#{unit_id}</div>
                 </div>""", unsafe_allow_html=True)
             with h2:
-                st.metric("예상 잔여 수명", f"{pred_rul} 사이클", help=f"약 {period}")
+                st.markdown(f"""
+                <div style="background:{_bg};border:1px solid {_brd};{_card_base}">
+                    <div style="{_lbl_style}">종합 상태</div>
+                    <div style="{_val_style}color:{color};">{icon} {status_name}</div>
+                </div>""", unsafe_allow_html=True)
             with h3:
-                st.metric("잔여 기간 (추정)", period)
+                st.markdown(f"""
+                <div style="background:#161b22;border:1px solid #21262d;{_card_base}">
+                    <div style="{_lbl_style}">현재까지 총 사이클</div>
+                    <div style="{_val_style}color:#e6edf3;">{_total_cycles}<span style="font-size:0.85rem;color:#8b949e;margin-left:4px;">회</span></div>
+                </div>""", unsafe_allow_html=True)
+            with h4:
+                st.markdown(f"""
+                <div style="background:#161b22;border:1px solid #21262d;{_card_base}">
+                    <div style="{_lbl_style}">예상 잔여 수명</div>
+                    <div style="{_val_style}color:{color};">{pred_rul}<span style="font-size:0.85rem;color:#8b949e;margin-left:4px;">사이클</span></div>
+                    <div style="{_sub_style}">{period} · {rul_to_flights(pred_rul)}</div>
+                </div>""", unsafe_allow_html=True)
  
             # ── RUL 잔여 게이지 ──
             # 데이터셋 내 최대 pred_rul을 기준으로 현재 엔진의 잔여 비율 계산
@@ -1000,20 +1213,24 @@ with tab_engine:
                         elif risk_pct > 50: r_color, r_label = "#d29922", "관찰"
                         else:               r_color, r_label = "#3fb950", "정상"
 
+                        # 기준 안내 텍스트 (Z-score 기반: 평균=50%, ±1σ=15%p)
+                        range_hint = "0~50%: 정상 · 51~65%: 관찰 · 66%+: 주의"
+
                         with col:
                             st.markdown(f"""
                             <div class="info-card" style="text-align:center;padding:14px 10px;">
-                                <div style="color:#8b949e;font-size:0.75rem;margin-bottom:6px;">{part_name}</div>
-                                <div style="font-size:1.4rem;font-weight:700;color:{r_color};">{risk_pct}%</div>
-                                <div style="font-size:0.75rem;color:{r_color};margin-bottom:8px;">{r_label}</div>
+                                <div style="color:#c9d1d9;font-size:0.8rem;font-weight:600;margin-bottom:6px;">{part_name}</div>
+                                <div style="font-size:1.5rem;font-weight:700;color:{r_color};">{risk_pct}%</div>
+                                <div style="font-size:0.78rem;color:{r_color};margin-bottom:6px;font-weight:500;">{r_label}</div>
                                 <div class="progress-bar-bg">
                                     <div class="progress-bar-fill" style="width:{risk_pct}%;background:{r_color};"></div>
                                 </div>
+                                <div style="font-size:0.68rem;color:#6e7681;margin-top:6px;">{range_hint}</div>
                             </div>""", unsafe_allow_html=True)
  
             # ── 부품별 이상 설명 + 센서 궤적 ──
             st.markdown('<p class="section-header">부품별 센서 궤적 및 권고 조치</p>', unsafe_allow_html=True)
-            st.caption("📊 부품별 이상 징후 점수는 최근 10사이클 추세 + 잔여수명 보정 기반입니다. 아래 그래프는 해당 부품 핵심 센서의 전체 운전 이력입니다.")
+            st.caption("📊 부품별 이상 징후 점수는 최근 10사이클 추세 + 잔여수명 보정 기반입니다. 기준: 0~50% 정상 / 51~65% 관찰 / 66%+ 주의. 아래 그래프는 해당 부품 핵심 센서의 전체 운전 이력입니다.")
 
             if not df_raw.empty and useful_cols:
                 # dom_part: Z-score 기반 위험도로 자체 계산 (get_engine_sensor_diagnosis 미사용)
@@ -1209,15 +1426,25 @@ with tab_sensor:
                     status_name, s_color, s_msg = "관찰", "#d29922", "일부 센서 수치가 평소보다 높게 관측되었습니다. 추세를 모니터링하세요."
 
                 st.markdown(f"""
-                <div class="info-card" style="text-align:center; padding:20px; border-top: 4px solid {s_color};">
-                    <div style="font-size:0.9rem; color:#8b949e;">엔진 종합 상태 점수</div>
-                    <div style="font-size:2.8rem; font-weight:bold; color:{s_color}; margin:10px 0;">
-                        {int(100 - worst_score)} <span style="font-size:1.2rem;">/ 100</span>
+                <div class="info-card" style="
+                    text-align:center;
+                    padding:32px 20px;
+                    border-top:4px solid {s_color};
+                    height:350px;
+                    display:flex;
+                    flex-direction:column;
+                    justify-content:center;
+                    align-items:center;
+                    box-sizing:border-box;
+                ">
+                    <div style="font-size:1rem;color:#8b949e;letter-spacing:0.05em;margin-bottom:16px;">엔진 종합 상태 점수</div>
+                    <div style="font-size:4.5rem;font-weight:800;color:{s_color};line-height:1;margin-bottom:8px;">
+                        {int(100 - worst_score)}<span style="font-size:1.8rem;color:#8b949e;"> / 100</span>
                     </div>
-                    <div style="padding:5px 15px; border-radius:20px; background:{s_color}22; color:{s_color}; display:inline-block; font-weight:bold;">
+                    <div style="padding:6px 22px;border-radius:20px;background:{s_color}33;color:{s_color};display:inline-block;font-weight:700;font-size:1rem;margin:12px 0;">
                         {status_name}
                     </div>
-                    <div style="font-size:0.85rem; color:#e6edf3; margin-top:15px; line-height:1.4;">{s_msg}</div>
+                    <div style="font-size:0.88rem;color:#c9d1d9;margin-top:14px;line-height:1.6;max-width:220px;">{s_msg}</div>
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -1230,53 +1457,63 @@ with tab_sensor:
             for idx, s in enumerate(avail_useful[:8]):
                 meta = SENSOR_META.get(s, {"name": s, "unit": ""})
                 val = last_row[s]
-                color, _, score = detect_sensor_status(df_raw[s], window=10)
-        
-                # 상태 라벨 매핑 (요청하신 한글 라벨 적용)
-                if color == "#3fb950":
-                    display_status = "정상"
-                elif color == "#d29922":
-                    display_status = "관찰"
-                else:
-                    display_status = "위험"
-            
+                color, status, score = detect_sensor_status(
+                    df_raw[s], window=10,
+                    cluster_series=cluster_col,
+                    pred_rul=_tab3_pred_rul,
+                    dataset_max_rul=_tab3_max_rul,
+                )
                 with g_cols[idx % 4]:
-                    st.markdown(f"""
-                    <div class="info-card" style="margin-bottom:10px;">
-                        <div style="color:#8b949e;font-size:0.72rem;">{meta['name']}</div>
-                        <div style="font-family:'JetBrains Mono';font-size:1.1rem;color:#e6edf3;">{val:.2f} <small>{meta['unit']}</small></div>
-                        <div style="font-size:0.7rem;color:{color}; font-weight:bold;">{display_status}</div>
-                        <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:{min(score,100)}%;background:{color};"></div></div>
-                    </div>""", unsafe_allow_html=True)
+                    # status가 hex 색상코드면 라벨로 변환
+                    _display_status = status
+                    if _display_status.startswith("#") or _display_status == "데이터 부족":
+                        _display_status = "정상" if score < 30 else "관찰" if score < 55 else "⚠ 이상"
+                    st.markdown(
+                        f'<div class="info-card" style="margin-bottom:10px;">'
+                        f'<div style="color:#8b949e;font-size:0.72rem;">{meta["name"]}</div>'
+                        f'<div style="font-family:JetBrains Mono;font-size:1.1rem;color:#e6edf3;">{val:.2f} <small>{meta["unit"]}</small></div>'
+                        f'<div style="font-size:0.7rem;color:{color};">{_display_status}</div>'
+                        f'<div class="progress-bar-bg"><div class="progress-bar-fill" style="width:{min(score,100)}%;background:{color};"></div></div>'
+                        f'</div>',
+                        unsafe_allow_html=True
+                    )
 
             # ── 센서 추세 분석 (Raw vs Normalized) ──
             st.markdown('<p class="section-header">센서 추세 분석</p>', unsafe_allow_html=True)
             all_s = sorted([c for c in df_raw.columns if re.match(r'^s_\d+$', c)], key=lambda x: int(x.split('_')[1]))
-            # ── 핵심 센서 빠른 선택 버튼 ──
-            # RUL TOP4 연관 센서를 버튼으로 제공
-            if not df_prep.empty and 'true_rul' in df_raw.columns:
-                try:
-                    _corr_quick = df_prep.merge(df_raw[['time_cycles','true_rul']], on='time_cycles')
-                    _s_cols_q   = [c for c in df_prep.columns if re.match(r'^s_\d+$', c)]
-                    _top4_s     = (_corr_quick[_s_cols_q + ['true_rul']].corr()['true_rul']
-                                   .drop('true_rul').abs()
-                                   .sort_values(ascending=False).head(4).index.tolist())
-                    st.caption("💡 수명 감소와 가장 연관된 핵심 센서:")
-                    _btn_cols = st.columns(len(_top4_s) + 1)
-                    if _btn_cols[0].button("핵심 센서 4개 선택", key="quick_top4"):
-                        st.session_state["selected_sensors"] = _top4_s
-                    for _bi, _bs in enumerate(_top4_s):
-                        _btn_cols[_bi+1].markdown(
-                            f'<span style="background:#21262d;border:1px solid #30363d;color:#58a6ff;'
-                            f'font-size:0.75rem;padding:3px 8px;border-radius:8px;display:inline-block;">'
-                            f'{sensor_label(_bs)}</span>', unsafe_allow_html=True
-                        )
-                except:
-                    pass
+            # ── 핵심 센서 빠른 선택 버튼 (데이터셋별 전체 유효 센서) ──
+            _rec_sensors = RECOMMENDED_SENSORS.get(subset_choice, avail_useful)
+            _rec_sensors = [s for s in _rec_sensors if s in all_s]
+            _n_rec = len(_rec_sensors)
 
-            _default_s = st.session_state.get("selected_sensors", avail_useful[:3])
-            _default_s = [s for s in _default_s if s in all_s] or avail_useful[:3]
-            selected_s = st.multiselect("분석 센서", options=all_s, default=_default_s, format_func=lambda x: sensor_label(x))
+            # ── 핵심 센서 선택 버튼 ──
+            _rec_sensors = RECOMMENDED_SENSORS.get(subset_choice, avail_useful)
+            _rec_sensors = [s for s in _rec_sensors if s in all_s]
+            _n_rec = len(_rec_sensors)
+
+            st.caption(f"💡 {subset_choice} 핵심 센서 {_n_rec}개")
+
+            # ── 핵심 센서 선택 버튼 ──
+            # 버튼 클릭마다 ver 증가 → key 변경 → multiselect 재생성 → default 반영
+            # rerun 없음 → 탭 위치 유지
+            _btn_ver_key = f"btn_ver_{subset_choice}_{unit_id}"
+            if _btn_ver_key not in st.session_state:
+                st.session_state[_btn_ver_key] = 0
+
+            if st.button(f"핵심 센서 {_n_rec}개 선택", key=f"rec_btn_{subset_choice}_{unit_id}"):
+                st.session_state[_btn_ver_key] += 1
+
+            _ver = st.session_state[_btn_ver_key]
+            # 버튼 한 번이라도 클릭했으면 항상 전체 선택 유지
+            # (홀수/짝수 토글 제거 — 클릭할수록 계속 전체 선택)
+            _default_s = _rec_sensors if _ver > 0 else _rec_sensors[:3]
+
+            selected_s = st.multiselect(
+                "분석 센서", options=all_s,
+                default=_default_s,
+                format_func=lambda x: sensor_label(x),
+                key=f"sensor_sel_{subset_choice}_{unit_id}_{_ver}",
+            )
 
             if selected_s:
                 c1, c2 = st.columns(2)
@@ -1531,7 +1768,7 @@ with tab_sensor:
         st.error(f"데이터 로드 및 분석 중 오류: {e}")
 
 # =========================================================
-# 탭 4: 점검 이력
+# 탭 5: 점검 이력 & 즉시점검 접수
 # =========================================================
 with tab_history:
     st.markdown(f'<p class="section-header">엔진 #{unit_id} 점검 이력</p>', unsafe_allow_html=True)
@@ -1713,201 +1950,3 @@ with tab_history:
             st.info("아직 접수된 점검이 없습니다. 위에서 엔진을 접수하세요.")
     else:
         st.info("데이터를 불러올 수 없습니다.")
-# =========================================================
-# 탭 5: 운영 시나리오 — 헬퍼 함수
-# =========================================================
-
-@st.cache_data
-def get_engine_sensor_diagnosis(subset: str, uid: int, useful_cols: list) -> dict:
-    """
-    특정 엔진의 마지막 사이클 센서를 분석해
-    이상 센서 목록과 부품별 원인 추정을 반환.
-
-    반환 예:
-    {
-      "anomalies": [
-          {"sensor": "HPC 출구 온도 (T30)", "direction": "상승", "severity": "high", "part": "HPC 압축기"},
-          ...
-      ],
-      "dominant_part": "HPC 압축기",
-      "summary": "HPC 출구 온도와 압력이 기준보다 높게 유지되고 있어 ..."
-    }
-    """
-    try:
-        con = duckdb.connect('cmapss.db', read_only=True)
-        # 해당 엔진 전체 + 마지막 행
-        df = con.execute(
-            f"SELECT * FROM test_{subset.lower()} WHERE unit_nr = {uid} ORDER BY time_cycles"
-        ).df()
-        con.close()
-    except:
-        return {}
-
-    if df.empty or len(df) < 5:
-        return {}
-
-    last = df.iloc[-1]
-    window = min(15, len(df))
-    recent = df.tail(window)
-
-    anomalies = []
-    part_score = {}  # 부품별 이상 누적 점수
-
-    # 부품-센서 매핑 (역방향)
-    sensor_to_part = {}
-    for part, sensors in PART_MAP.items():
-        for s in sensors:
-            sensor_to_part[s] = part
-
-    for col in useful_cols:
-        if col not in df.columns:
-            continue
-        arr = df[col].values
-        global_range = arr.max() - arr.min()
-        # 상수 센서 제외
-        if global_range < abs(arr.mean()) * 0.001 + 1e-9:
-            continue
-
-        # 최근 기울기
-        x = np.arange(window)
-        recent_arr = recent[col].values
-        slope = np.polyfit(x, recent_arr, 1)[0]
-        global_std = arr.std() + 1e-9
-        norm_slope = abs(slope) / global_std
-
-        # 현재값 백분위
-        pct = float((arr < last[col]).mean())
-        extremity = abs(pct - 0.5) * 2
-
-        score = min(1.0, norm_slope / 0.5) * 0.6 + extremity * 0.4
-        if score < 0.30:
-            continue  # 정상 센서 제외
-
-        direction = "상승" if slope > 0 else "하강"
-        severity  = "high" if score > 0.55 else "medium"
-        part      = sensor_to_part.get(col, "기타")
-        meta      = SENSOR_META.get(col, {"name": col, "unit": ""})
-        sensor_name = f"{meta['name']} ({meta.get('symbol', col)})"
-
-        anomalies.append({
-            "sensor":    sensor_name,
-            "code":      col,
-            "direction": direction,
-            "severity":  severity,
-            "score":     round(score, 2),
-            "part":      part,
-            "pct_rank":  round(pct * 100, 1),
-        })
-        part_score[part] = part_score.get(part, 0) + score
-
-    # 가장 이상 점수 높은 부품
-    dominant_part = max(part_score, key=part_score.get) if part_score else None
-
-    # 자연어 요약 생성
-    if anomalies:
-        top = sorted(anomalies, key=lambda x: x["score"], reverse=True)[:3]
-        summary_parts = []
-        for a in top:
-            rank_txt = "매우 높은" if a["pct_rank"] > 80 else "높은" if a["pct_rank"] > 65 else "낮은"
-            summary_parts.append(
-                f"{a['sensor']}이(가) {rank_txt} 수준으로 {a['direction']}하고 있음"
-            )
-        summary = " · ".join(summary_parts)
-    else:
-        summary = "센서 수치는 안정적이나 누적 운전 사이클로 인해 잔여 수명이 임박했습니다."
-
-    return {
-        "anomalies":      anomalies,
-        "dominant_part":  dominant_part,
-        "summary":        summary,
-        "part_score":     part_score,
-    }
-
-
-def render_scenario_card(uid: int, rul: int, days: str, diag: dict,
-                          border_color: str, badge_color: str,
-                          badge_bg: str, badge_text: str, urgency: str):
-    """엔진별 개인화된 시나리오 카드 렌더링 — HTML을 변수로 조립 후 단일 markdown 호출"""
-    anomalies = diag.get("anomalies", [])
-    dom_part  = diag.get("dominant_part")
-    summary   = diag.get("summary", "")
-
-    # ── 이상 센서 뱃지 ──
-    badges_html = ""
-    for a in anomalies[:4]:
-        c    = "#f85149" if a["severity"] == "high" else "#d29922"
-        icon = "📈" if a["direction"] == "상승" else "📉"
-        badges_html += (
-            '<span style="display:inline-block;background:rgba(255,255,255,0.06);'
-            f'border:1px solid {c};color:{c};font-size:0.72rem;'
-            f'padding:2px 8px;border-radius:10px;margin:2px;">'
-            f'{icon} {a["sensor"]} {a["direction"]}</span>'
-        )
-
-    # ── 부품별 권고 액션 ──
-    part_actions = {
-        "HPC":            ["HPC 압축기 블레이드 육안 점검", "압축기 세정(Water Wash) 실시", "HPC 출구 온도·압력 센서 교정"],
-        "팬 시스템":       ["팬 블레이드 균열·마모 점검", "팬 베어링 이상 소음 확인", "팬 입구 이물질(FOD) 검사"],
-        "LPC":            ["LPC 블레이드 간극 측정", "LPC 출구 온도 이력 검토", "저압 압축기 시일 상태 확인"],
-        "터빈 (LPT/HPT)": ["터빈 블레이드 열손상 점검", "냉각 블리드 유량 측정", "터빈 케이싱 크리프 검사"],
-        "코어":            ["코어 속도 센서 교정", "엔진 압력비(EPR) 재측정", "연료 노즐 막힘 여부 확인"],
-    }
-    default_actions = ["전체 보어스코프 검사 실시", "주요 센서 교정 점검", "수석 정비사 확인 후 운항 재개 결정"]
-    actions   = part_actions.get(dom_part, default_actions)
-    nums      = ["①", "②", "③"]
-    act_lines = "".join(
-        f'<div style="margin-left:8px;">{nums[i]} {a}</div>'
-        for i, a in enumerate(actions[:3])
-    )
-
-    # ── 주요 이상 부품 표시 ──
-    part_span = ""
-    if dom_part:
-        part_span = (
-            f'<span style="color:#8b949e;font-size:0.78rem;margin-left:8px;">'
-            f'· 주요 이상 부품: <strong style="color:{border_color};">{dom_part}</strong></span>'
-        )
-
-    # ── 요약 문구 ──
-    summary_block = ""
-    if summary:
-        summary_block = (
-            f'<div style="color:#8b949e;font-size:0.80rem;margin:8px 0 6px 0;line-height:1.6;">'
-            f'📊 {summary}</div>'
-        )
-
-    # ── 센서 이상 없이 수명만 임박한 경우 ──
-    no_anomaly = ""
-    if not anomalies:
-        no_anomaly = (
-            '<div style="color:#8b949e;font-size:0.80rem;margin-bottom:6px;">'
-            '💡 센서 수치 자체는 안정적이나 누적 운전에 의한 예방 점검이 필요합니다.</div>'
-        )
-
-    # ── 센서 뱃지 래퍼 ──
-    badges_block = f'<div style="margin-bottom:6px;">{badges_html}</div>' if badges_html else ""
-
-    # ── 최종 HTML 조립 (f-string 중첩 없이 변수만 삽입) ──
-    html = (
-        f'<div class="info-card" style="border-left:4px solid {border_color};margin-bottom:12px;">'
-        f'  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">'
-        f'    <div>'
-        f'      <span style="color:{border_color};font-weight:700;font-size:1rem;">엔진 #{uid}</span>'
-        f'      <span style="color:#8b949e;font-size:0.82rem;margin-left:10px;">잔여 수명 {rul}사이클 ({days})</span>'
-        f'      {part_span}'
-        f'    </div>'
-        f'    <span style="background:{badge_bg};color:{badge_color};font-size:0.72rem;'
-        f'padding:3px 10px;border-radius:12px;font-weight:600;">{badge_text}</span>'
-        f'  </div>'
-        f'  {badges_block}'
-        f'  {summary_block}'
-        f'  {no_anomaly}'
-        f'  <div style="font-size:0.83rem;color:#c9d1d9;line-height:1.9;margin-top:6px;">'
-        f'    📋 <strong>권고 조치</strong>'
-        f'    {act_lines}'
-        f'  </div>'
-        f'</div>'
-    )
-    st.markdown(html, unsafe_allow_html=True)
-
-
