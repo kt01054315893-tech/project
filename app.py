@@ -278,7 +278,7 @@ html, body, [class*="css"] {
 # =========================================================
 # 2. 상수 & 매핑
 # =========================================================
-os.environ["GOOGLE_API_KEY"] = "AIzaSyDLCMx1oKLOwilvJx4BnPSxci0QGRr1rrU"
+os.environ["GOOGLE_API_KEY"] = "your_key"
  
 # 센서 코드 → 한글 명칭, 단위
 SENSOR_META = {
