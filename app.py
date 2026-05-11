@@ -20,7 +20,8 @@ except ImportError:
  
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models.google import GoogleModel
- 
+ # 변경 후
+
 # =========================================================
 # 1. 페이지 설정 & 전역 CSS
 # =========================================================
@@ -1230,7 +1231,7 @@ with tab_engine:
  
             # ── 부품별 이상 설명 + 센서 궤적 ──
             st.markdown('<p class="section-header">부품별 센서 궤적 및 권고 조치</p>', unsafe_allow_html=True)
-            st.caption("📊 부품별 이상 징후 점수는 최근 10사이클 추세 + 잔여수명 보정 기반입니다. 기준: 0~50% 정상 / 51~65% 관찰 / 66%+ 주의. 아래 그래프는 해당 부품 핵심 센서의 전체 운전 이력입니다.")
+            st.caption("📊 부품별 이상 징후 점수는 최근 10사이클 추세 + 잔여수명 보정 기반입니다. 기준: '0~50% 정상' / '51~65% 관찰' / '66%+ 주의'. 아래 그래프는 해당 부품 핵심 센서의 전체 운전 이력입니다.")
 
             if not df_raw.empty and useful_cols:
                 # dom_part: Z-score 기반 위험도로 자체 계산 (get_engine_sensor_diagnosis 미사용)
@@ -1360,7 +1361,7 @@ with tab_engine:
             st.warning(f"엔진 #{unit_id} 데이터가 없습니다.")
     else:
         st.info("데이터를 불러올 수 없습니다.")
- 
+
 # =========================================================
 # 탭 3: 센서 분석
 # =========================================================
