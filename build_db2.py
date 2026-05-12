@@ -15,7 +15,7 @@ def update_db_with_preprocessed():
         
         # --- [기존] 전처리된 CSV 파일 경로 설정 ---
         # 파일명 형식: test_FD001_preprocessed.csv
-        prep_file_name = f"test_{ds}_preprocessed.csv"
+        prep_file_name = f"preprocessed_test_{ds}.csv"
         prep_path = os.path.join(base_path, prep_file_name)
         
         if os.path.exists(prep_path):

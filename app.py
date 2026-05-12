@@ -717,9 +717,57 @@ def load_ai_agent():
  
 async def run_chat(agent, subset: str, unit_nr: int, query: str) -> str:
     try:
-        ctx = f"현재 사용자가 보고 있는 엔진: {subset} 데이터셋의 {unit_nr}번 엔진. 질문: {query}"
+        # 엔진 데이터 로드
+        summary_df, _ = load_all_summary_best(subset)
+
+        latest = summary_df.drop_duplicates('unit_nr', keep='last')
+        row = latest[latest['unit_nr'] == unit_nr]
+
+        if row.empty:
+            return "엔진 데이터를 찾을 수 없습니다."
+
+        pred_rul = int(row['pred_rul'].iloc[0])
+
+        # 센서 데이터
+        df_raw = load_sensor_data(f"test_{subset.lower()}", unit_nr)
+
+        useful_cols = [f"s_{i}" for i in USEFUL_SENSORS.get(subset, [])]
+
+        sensor_summary = []
+
+        for s in useful_cols[:5]:
+            try:
+                color, label, score = detect_sensor_status(df_raw[s])
+
+                sensor_name = SENSOR_META.get(s, {}).get('name', s)
+
+                sensor_summary.append(
+                    f"{sensor_name}: {label} ({score}%)"
+                )
+            except:
+                pass
+
+        sensor_text = "\n".join(sensor_summary)
+
+        ctx = f"""
+현재 엔진 정보:
+
+- 데이터셋: {subset}
+- 엔진 번호: {unit_nr}
+- 예상 잔여 수명: {pred_rul} 사이클
+- 주요 센서 상태:
+{sensor_text}
+
+사용자 질문:
+{query}
+
+질문에 맞게 구체적으로 답변하세요.
+"""
+
         result = await agent.run(ctx)
+
         return result.data if hasattr(result, 'data') else result.output
+
     except Exception as e:
         return f"❌ AI 오류: {str(e)}"
  
@@ -764,7 +812,7 @@ with st.sidebar:
     st.markdown("---")
  
     # 채팅 이력
-    chat_container = st.container(height=320)
+    chat_container = st.container(height=760)
     for msg in st.session_state.messages:
         chat_container.chat_message(msg["role"]).write(msg["content"])
  
@@ -858,6 +906,7 @@ with tab_overview:
             </div>''', unsafe_allow_html=True)
 
         # ── 잔여 수명 분포 (요약 바로 아래) ──
+        st.markdown("---")  # ← 이 줄 추가
         st.markdown('<p class="section-header">잔여 수명 분포</p>', unsafe_allow_html=True)
         fig_dist = go.Figure()
         fig_dist.add_trace(go.Histogram(
@@ -879,6 +928,7 @@ with tab_overview:
         st.plotly_chart(fig_dist, use_container_width=True)
 
         # ── 엔진 상태 카드 리스트 ──
+        st.markdown("---")  # ← 이 줄 추가
         st.markdown('<p class="section-header">엔진별 상태 카드</p>', unsafe_allow_html=True)
 
         # 필터 & 정렬 UI — 3개 같은 너비로 한 줄 배치
@@ -1231,8 +1281,9 @@ with tab_engine:
                             </div>""", unsafe_allow_html=True)
  
             # ── 부품별 이상 설명 + 센서 궤적 ──
+            st.markdown("---")  # ← 이 줄 추가
             st.markdown('<p class="section-header">부품별 센서 궤적 및 권고 조치</p>', unsafe_allow_html=True)
-            st.caption("📊 부품별 이상 징후 점수는 최근 10사이클 추세 + 잔여수명 보정 기반입니다. 기준: 0~50% 정상 / 51~65% 관찰 / 66%+ 주의. 아래 그래프는 해당 부품 핵심 센서의 전체 운전 이력입니다.")
+            st.caption("📊 부품별 이상 징후 점수는 최근 10사이클 추세 + 잔여수명 보정 기반입니다. 기준: 0 - 50% 정상 / 51 - 65% 관찰 / 66%+ 주의. 아래 그래프는 해당 부품 핵심 센서의 전체 운전 이력입니다.")
 
             if not df_raw.empty and useful_cols:
                 # dom_part: Z-score 기반 위험도로 자체 계산 (get_engine_sensor_diagnosis 미사용)
@@ -1330,6 +1381,7 @@ with tab_engine:
                             )
 
             # ── 전수 엔진 RUL 비교 차트 ──
+            st.markdown("---")  # ← 이 줄 추가
             st.markdown('<p class="section-header">전체 엔진 잔여 수명 비교</p>', unsafe_allow_html=True)
             comp = latest_all.sort_values('unit_nr')
             bar_colors = ['#f85149' if r < 30 else '#d29922' if r < 60 else '#3fb950'
@@ -1481,6 +1533,7 @@ with tab_sensor:
                     )
 
             # ── 센서 추세 분석 (Raw vs Normalized) ──
+            st.markdown("---")  # ← 이 줄 추가
             st.markdown('<p class="section-header">센서 추세 분석</p>', unsafe_allow_html=True)
             all_s = sorted([c for c in df_raw.columns if re.match(r'^s_\d+$', c)], key=lambda x: int(x.split('_')[1]))
             # ── 핵심 센서 빠른 선택 버튼 (데이터셋별 전체 유효 센서) ──
@@ -1626,77 +1679,82 @@ with tab_sensor:
 
 
             # ── SHAP 기반 RUL 예측 설명 ──
-            st.markdown('<p class="section-header">AI가 설명하는 수명 예측 근거 (SHAP)</p>', unsafe_allow_html=True)
-            st.caption("이 엔진의 잔여 수명을 낮게/높게 만든 센서가 무엇인지 AI가 설명합니다.")
+                @st.cache_data
+                def compute_shap(subset: str, unit_nr: int):
+                    """SHAP 값 계산 — 모델 파일 및 데이터 매칭 최적화"""
+                    # 1. 모델 매핑 (사용자님의 파일명 model_XGBoost_FD002.pkl에 정확히 맞춤)
+                    best_model_map = {
+                        "FD001": "LightGBM", 
+                        "FD002": "XGBoost",
+                        "FD003": "XGBoost",
+                        "FD004": "XGBoost",
+                    }
+    
+                    model_name = best_model_map.get(subset)
+                    if not model_name:
+                        return None, None, f"❌ {subset} 모델 설정 없음"
+                    model_path = f"saved_models/model_{model_name}_{subset}.pkl"
 
-            @st.cache_data
-            def compute_shap(subset: str, unit_nr: int):
-                """SHAP 값 계산 — 모델 파일 자동 탐색"""
-                best_model_map = {
-                    "FD001": "LightGBM", "FD002": "XGBoost",
-                    "FD003": "XGBoost",  "FD004": "XGBoost",
-                }
-                model_name = best_model_map.get(subset, "XGBoost")
-                model_path = f"saved_models/model_{model_name}_{subset}.pkl"
+                    # 파일 존재 여부 확인 (디버깅용 출력 포함)
+                    if not os.path.exists(model_path):
+                            # 여기서 3개를 정확히 반환해야 합니다.
+                            return None, None, f"❌ 파일 없음: {model_path}"
+                    try:
+                        # 2. 모델 로드
+                        with open(model_path, 'rb') as f:
+                            model = pickle.load(f)
 
-                if not os.path.exists(model_path):
-                    return None, None, None
+                        # 3. 데이터 로드 (DuckDB)
+                        con = duckdb.connect('cmapss.db', read_only=True)
+                        # 테이블명: test_fd001_prep, test_fd002_prep...
+                        table_name = f"test_{subset.lower()}_prep"
+                        df_input = con.execute(
+                        f"SELECT * FROM {table_name} WHERE unit_nr = {unit_nr} ORDER BY time_cycles DESC LIMIT 1"
+                        ).df()
+                        con.close()
 
-                # features 파일은 없을 수 있으므로 DB prep 컬럼에서 직접 추출
-                feat_path = f"saved_models/features_{model_name}_{subset}.pkl"
+                        if df_input.empty:
+                            return None, None, f"❌ {table_name} 테이블에 엔진 번호 {unit_nr}의 데이터가 없습니다."
 
-                try:
-                    with open(model_path, 'rb') as f:
-                        model = pickle.load(f)
+                        # 4. 피처(Feature) 선택 로직
+                        # 학습 시 사용된 컬럼명 추출 시도
+                        if hasattr(model, 'feature_names_in_'):
+                            feature_names = list(model.feature_names_in_)
+                        elif hasattr(model, 'feature_name_'): # LightGBM 전용
+                            feature_names = list(model.feature_name_())
+                        else:
+                            # 모델에 정보가 없으면 DB 컬럼에서 불필요한 항목 제외
+                            exclude_cols = ['unit_nr', 'time_cycles', 'true_rul', 'op_cluster', 
+                                            'op_setting_1', 'op_setting_2', 'op_setting_3', 'RUL']
+                            feature_names = [c for c in df_input.columns if c not in exclude_cols]
 
-                    con = duckdb.connect('cmapss.db', read_only=True)
-                    df_input = con.execute(
-                        f"SELECT * FROM test_{subset.lower()}_prep WHERE unit_nr = {unit_nr} ORDER BY time_cycles DESC LIMIT 1"
-                    ).df()
-                    con.close()
+                        # 실제 존재하는 컬럼만 필터링
+                        row_data = {f: (df_input[f].values[0] if f in df_input.columns else 0.0)
+                                    for f in feature_names}
+                        X = pd.DataFrame([row_data], columns=feature_names)
 
-                    if df_input.empty:
-                        return None, None, None
-
-                    # 피처명 우선순위:
-                    # 1) features_*.pkl 별도 파일
-                    # 2) model.feature_names_in_ (sklearn 호환)
-                    # 3) model.feature_name_ (LightGBM)
-                    # 4) prep 테이블의 센서 컬럼 전체
-                    if os.path.exists(feat_path):
-                        with open(feat_path, 'rb') as f:
-                            feature_names = pickle.load(f)
-                    elif hasattr(model, 'feature_names_in_'):
-                        feature_names = list(model.feature_names_in_)
-                    elif hasattr(model, 'feature_name_'):
-                        feature_names = list(model.feature_name_())
-                    else:
-                        # prep 테이블에서 센서/운전조건 컬럼만 추출
-                        feature_names = [c for c in df_input.columns
-                                         if c not in ('unit_nr', 'time_cycles', 'true_rul',
-                                                       'op_cluster', 'op_setting_1',
-                                                       'op_setting_2', 'op_setting_3')]
-
-                    avail_feats = [f for f in feature_names if f in df_input.columns]
-                    if not avail_feats:
-                        return None, None, None
-
-                    X = df_input[avail_feats].values
-
-                    if hasattr(model, 'predict'):
+                        # 5. SHAP 계산
+                        # TreeExplainer는 XGBoost, LightGBM, RandomForest 등에 최적화되어 있습니다.
                         explainer = shap.TreeExplainer(model)
                         shap_vals = explainer.shap_values(X)
+
+                        # 결과가 리스트인 경우(분류 모델 등) 첫 번째 클래스 선택
                         if isinstance(shap_vals, list):
                             shap_vals = shap_vals[0]
-                        base = explainer.expected_value
-                        if isinstance(base, (list, np.ndarray)):
-                            base = float(base[0])
-                        return shap_vals[0], avail_feats, float(base)
-                except Exception:
-                    return None, None, None
+        
+                        # 기댓값(Base Value) 처리
+                        base_val = explainer.expected_value
+                        if isinstance(base_val, (list, np.ndarray)):
+                            base_val = float(base_val[0])
+
+                        return shap_vals[0], feature_names, "Success"
+
+                    except Exception as e:
+                        # 에러 발생 시 None만 주지 말고 에러 내용을 반환하여 화면에 표시
+                        return None, None, f"⚠️ 오류 발생: {str(e)}"
 
             if SHAP_AVAILABLE:
-                shap_vals, feat_names, base_val = compute_shap(subset_choice, unit_id)
+                shap_vals, feat_names, result_msg = compute_shap(subset_choice, unit_id)
 
                 if shap_vals is not None and feat_names:
                     # SHAP 값을 센서 한글 명칭으로 매핑해 정렬
@@ -1705,14 +1763,42 @@ with tab_sensor:
                         "shap_value":  shap_vals,
                         "abs_shap":    np.abs(shap_vals),
                     })
-                    shap_df["sensor_name"] = shap_df["sensor_code"].apply(
-                        lambda s: SENSOR_META[s]["name"] + f" ({SENSOR_META[s]['symbol']})"
-                              if s in SENSOR_META else s
-                    )
+
+                    def shap_feat_label(code: str) -> str:
+                        """
+                        s_11_rollstd60  → HPC 출구 정적압력_rollstd60
+                        s_11_diff60     → HPC 출구 정적압력_diff60
+                        s_11            → HPC 출구 정적압력 (Ps30)   ← 순수 센서는 기존 방식 유지
+                        cluster_0       → cluster_0                   ← 그대로
+                        """
+                        # 순수 센서 코드인지 먼저 확인 (s_11 등)
+                        if code in SENSOR_META:
+                            m = SENSOR_META[code]
+                            return f"{m['name']} ({m['symbol']})"
+
+                        # 파생 피처인지 확인: s_숫자_suffix 형태
+                        # 예) s_11_rollstd60 → base=s_11, suffix=rollstd60
+                        import re
+                        m = re.match(r'^(s_\d+)_(.+)$', code)
+                        if m:
+                            base   = m.group(1)   # s_11
+                            suffix = m.group(2)   # rollstd60
+                            if base in SENSOR_META:
+                                return f"{SENSOR_META[base]['name']}_{suffix}"
+
+                        # 매핑 안 되면 원본 코드 그대로
+                        return code
+
+                    shap_df["sensor_name"] = shap_df["sensor_code"].apply(shap_feat_label)
+
                     shap_top = shap_df.nlargest(10, "abs_shap").sort_values("abs_shap")
 
                     # 색상: 양수(수명 증가 기여) → 파랑, 음수(수명 감소 기여) → 빨강
                     bar_colors = ["#58a6ff" if v > 0 else "#f85149" for v in shap_top["shap_value"]]
+
+                    st.markdown("---")  # ← 이 줄 추가
+                    st.markdown('<p class="section-header">AI 수명 예측 근거 — 핵심 피처 TOP 10</p>', unsafe_allow_html=True)
+                    st.caption("각 피처가 이 엔진의 잔여 수명 예측에 얼마나 영향을 미쳤는지 보여줍니다. 오른쪽(+)은 수명 증가 기여, 왼쪽(-)은 수명 단축 요인입니다.")
 
                     fig_shap = go.Figure()
                     fig_shap.add_trace(go.Bar(
@@ -1762,7 +1848,7 @@ with tab_sensor:
                             <div style="color:#c9d1d9;font-size:0.88rem;">{explain_html}</div>
                         </div>""", unsafe_allow_html=True)
                 else:
-                    st.info("💡 SHAP 분석을 위해 saved_models/model_[모델명]_[데이터셋].pkl 파일이 필요합니다. (예: model_XGBoost_FD001.pkl)")
+                    st.info(f"💡 {result_msg}")
             else:
                 st.warning("SHAP 라이브러리가 설치되지 않았습니다. `pip install shap` 후 재시작하세요.")
 
@@ -1838,6 +1924,7 @@ with tab_history:
             st.rerun()
  
     # ── AI 이력 기반 분석 ──
+    st.markdown("---")  # ← 이 줄 추가
     st.markdown('<p class="section-header">AI 점검 이력 분석</p>', unsafe_allow_html=True)
     if st.button("🤖 이 엔진의 점검 패턴 분석해줘", use_container_width=True):
         history_text = "\n".join([f"{r['date']} {r['type']}: {r['note']} (담당:{r['by']})" for r in records])
@@ -1854,7 +1941,7 @@ with tab_history:
                 except Exception as e:
                     st.error(f"오류: {e}")
 
-
+    st.markdown("---")  # ← 이 줄 추가
     st.markdown('<p class="section-header">즉시 점검 접수 및 이력 관리</p>', unsafe_allow_html=True)
     st.caption("잔여 수명 30사이클 미만 엔진의 점검을 일괄 접수하고 기록합니다.")
 
