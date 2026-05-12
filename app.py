@@ -847,10 +847,10 @@ with st.sidebar:
 _default_tab = st.session_state.get("active_tab", 0)
 
 tab_overview, tab_engine, tab_sensor, tab_history = st.tabs([
-    "🏠 전체 현황",
-    "🔍 엔진 상세",
-    "📡 센서 분석",
-    "📋 점검 이력 & 즉시접수",
+    "전체 현황",
+    "엔진 상세",
+    "센서 분석",
+    "점검 이력 & 즉시접수",
 ])
 
  
