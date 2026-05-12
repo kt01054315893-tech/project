@@ -3,10 +3,13 @@ pandas
 numpy
 plotly
 duckdb
-pydantic-ai
+pydantic-ai==0.0.12
+pydantic-ai-slim[google]==0.0.12
+griffe
 google-generativeai
 scikit-learn
 joblib
 nest-asyncio
 shap
-python-requires>=3.12,<3.13
+xgboost
+lightgbm
