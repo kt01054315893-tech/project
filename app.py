@@ -20,7 +20,7 @@ except ImportError:
  
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models.gemini import GeminiModel
- 
+
 # =========================================================
 # 1. 페이지 설정 & 전역 CSS
 # =========================================================
@@ -36,7 +36,8 @@ st.markdown("""
 
 html, body, [class*="css"] {
     font-family: 'Noto Sans KR', sans-serif;
-    color: #e6edf3;
+    font-size: 16px !important;
+    color: #1a2e4a;
 }
 
 /* ── 상단 헤더/툴바 완전 숨김 ── */
@@ -47,91 +48,109 @@ header[data-testid="stHeader"],
 #MainMenu { visibility: hidden; height: 0; }
 .block-container { padding-top: 1rem !important; }
 
-/* ── 전체 배경 ── */
-.stApp { background-color: #0d1117; }
+/* ── 전체 배경 흰색 ── */
+.stApp { background-color: #f0f6ff !important; }
 
-/* ── 사이드바 ── */
+/* ── 사이드바 연한 하늘색 ── */
 [data-testid="stSidebar"] {
-    background-color: #161b22;
-    border-right: 1px solid #21262d;
+    background: linear-gradient(160deg, #a8d8ea 0%, #7ec8e3 50%, #5ab3d4 100%) !important;
+    border-right: 1px solid #7ec8e3;
     min-width: 400px !important;
-    width: 400px;          /* 기본 너비 — 사용자가 드래그로 조절 가능 */
+    width: 400px;
 }
-[data-testid="stSidebar"] .stMarkdown h3 {
-    color: #e6edf3;
-    font-size: 0.9rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    font-weight: 600;
-}
-/* 사이드바 내 텍스트 가독성 */
 [data-testid="stSidebar"] p,
 [data-testid="stSidebar"] label,
-[data-testid="stSidebar"] .stMarkdown {
-    color: #c9d1d9 !important;
-    font-size: 0.95rem;
+[data-testid="stSidebar"] .stMarkdown,
+[data-testid="stSidebar"] span {
+    color: #ffffff !important;
+    font-size: 1rem !important;
 }
 [data-testid="stSidebar"] .stMarkdown h3 {
-    font-size: 1.05rem !important;
-    color: #e6edf3 !important;
-    font-weight: 600;
+    font-size: 1.2rem !important;
+    color: #ffffff !important;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
 [data-testid="stSidebar"] button {
-    font-size: 0.92rem !important;
+    font-size: 1rem !important;
     white-space: normal !important;
     height: auto !important;
     line-height: 1.5 !important;
-    padding: 8px 12px !important;
+    padding: 10px 14px !important;
+    background: rgba(255,255,255,0.35) !important;
+    color: #1a3a4a !important;
+    border: 1px solid rgba(255,255,255,0.6) !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+}
+[data-testid="stSidebar"] button:hover {
+    background: rgba(255,255,255,0.55) !important;
 }
 [data-testid="stSidebar"] [data-testid="stChatInput"] textarea {
-    font-size: 0.95rem !important;
+    font-size: 1rem !important;
+    background: rgba(255,255,255,0.15) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255,255,255,0.4) !important;
 }
 [data-testid="stSidebar"] [data-testid="stChatMessage"] {
-    font-size: 0.92rem !important;
+    font-size: 1rem !important;
+}
+[data-testid="stSidebar"] [data-testid="stChatMessage"] p {
+    font-size: 1rem !important;
+    color: #ffffff !important;
 }
 [data-testid="stSidebar"] select,
 [data-testid="stSidebar"] input[type="number"] {
-    font-size: 0.95rem !important;
+    font-size: 1rem !important;
+    color: #1a2e4a !important;
 }
- 
+[data-testid="stSidebar"] .stSelectbox label,
+[data-testid="stSidebar"] .stNumberInput label {
+    color: #ffffff !important;
+    font-size: 1rem !important;
+    font-weight: 600;
+}
+
 /* ── 탭 스타일 ── */
 .stTabs [data-baseweb="tab-list"] {
-    background-color: #161b22;
-    border-bottom: 1px solid #21262d;
+    background-color: #ffffff;
+    border-bottom: 2px solid #b8d9f0;
     padding: 0 8px;
     gap: 0;
+    box-shadow: 0 2px 8px rgba(74,159,212,0.1);
 }
 .stTabs [data-baseweb="tab"] {
     background-color: transparent;
-    color: #8b949e;
-    font-size: 0.875rem;
-    font-weight: 500;
-    padding: 12px 20px;
+    color: #5a8aaa;
+    font-size: 1.05rem !important;
+    font-weight: 600;
+    padding: 14px 24px;
     border: none;
-    border-bottom: 2px solid transparent;
+    border-bottom: 3px solid transparent;
 }
 .stTabs [aria-selected="true"] {
-    color: #58a6ff !important;
-    border-bottom: 2px solid #58a6ff !important;
+    color: #1a6ea8 !important;
+    border-bottom: 3px solid #1a6ea8 !important;
     background-color: transparent !important;
 }
- 
+
 /* ── 상태 카드 ── */
 .status-card {
-    background: #161b22;
-    border: 1px solid #21262d;
-    border-radius: 10px;
-    padding: 18px 20px;
+    background: #ffffff;
+    border: 1px solid #c8e4f5;
+    border-radius: 12px;
+    padding: 20px 22px;
     margin-bottom: 12px;
     position: relative;
     overflow: hidden;
-    transition: border-color 0.2s;
+    transition: all 0.2s;
+    box-shadow: 0 2px 10px rgba(74,159,212,0.08);
 }
-.status-card:hover { border-color: #30363d; }
-.status-card.danger  { border-left: 4px solid #f85149; }
-.status-card.warning { border-left: 4px solid #d29922; }
-.status-card.normal  { border-left: 4px solid #3fb950; }
- 
+.status-card:hover { border-color: #4a9fd4; box-shadow: 0 6px 20px rgba(74,159,212,0.15); transform: translateY(-1px); }
+.status-card.danger  { border-left: 5px solid #e53e3e; }
+.status-card.warning { border-left: 5px solid #d97706; }
+.status-card.normal  { border-left: 5px solid #16a34a; }
+
 .card-header {
     display: flex;
     justify-content: space-between;
@@ -140,81 +159,82 @@ header[data-testid="stHeader"],
 }
 .card-engine-id {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: #e6edf3;
+    font-size: 1.1rem !important;
+    font-weight: 700;
+    color: #1a2e4a;
 }
 .badge {
-    font-size: 0.72rem;
-    font-weight: 600;
-    padding: 3px 10px;
+    font-size: 0.9rem !important;
+    font-weight: 700;
+    padding: 5px 14px;
     border-radius: 20px;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.02em;
 }
-.badge.danger  { background: rgba(248,81,73,0.15);  color: #f85149; }
-.badge.warning { background: rgba(210,153,34,0.15); color: #d29922; }
-.badge.normal  { background: rgba(63,185,80,0.15);  color: #3fb950; }
- 
+.badge.danger  { background: rgba(229,62,62,0.12);  color: #e53e3e; }
+.badge.warning { background: rgba(217,119,6,0.12);  color: #d97706; }
+.badge.normal  { background: rgba(22,163,74,0.12);  color: #16a34a; }
+
 .rul-value {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 1.6rem;
-    font-weight: 600;
-    color: #e6edf3;
+    font-size: 2.2rem !important;
+    font-weight: 700;
+    color: #1a2e4a;
     line-height: 1;
     margin-bottom: 4px;
 }
 .rul-label {
-    font-size: 0.75rem;
-    color: #8b949e;
+    font-size: 0.95rem !important;
+    color: #5a8aaa;
     margin-bottom: 10px;
 }
 .progress-bar-bg {
-    background: #21262d;
+    background: #d4eaf7;
     border-radius: 4px;
-    height: 6px;
+    height: 8px;
     width: 100%;
     margin-bottom: 8px;
 }
 .progress-bar-fill {
-    height: 6px;
+    height: 8px;
     border-radius: 4px;
     transition: width 0.5s ease;
 }
 .action-text {
-    font-size: 0.78rem;
-    color: #8b949e;
+    font-size: 0.95rem !important;
+    color: #5a8aaa;
     margin-top: 6px;
 }
- 
+
 /* ── 상단 요약 바 ── */
 .summary-bar {
-    background: #161b22;
-    border: 1px solid #21262d;
-    border-radius: 10px;
-    padding: 14px 24px;
+    background: #ffffff;
+    border: 1px solid #c8e4f5;
+    border-radius: 12px;
+    padding: 16px 28px;
     display: flex;
     gap: 40px;
     align-items: center;
     margin-bottom: 24px;
+    box-shadow: 0 2px 10px rgba(74,159,212,0.08);
 }
-.summary-item-label { font-size: 0.75rem; color: #8b949e; margin-bottom: 2px; }
-.summary-item-value { font-size: 1.3rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
-.sv-danger  { color: #f85149; }
-.sv-warning { color: #d29922; }
-.sv-normal  { color: #3fb950; }
- 
+.summary-item-label { font-size: 0.95rem !important; color: #5a8aaa; margin-bottom: 2px; font-weight: 500; }
+.summary-item-value { font-size: 1.6rem !important; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+.sv-danger  { color: #e53e3e; }
+.sv-warning { color: #d97706; }
+.sv-normal  { color: #16a34a; }
+
 /* ── 섹션 헤더 ── */
 .section-header {
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.1em;
+    font-size: 1rem !important;
+    font-weight: 700;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: #58a6ff;
+    color: #3a9ec4;
     margin: 24px 0 12px 0;
-    padding-bottom: 6px;
-    border-bottom: 1px solid #21262d;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #c8e4f5;
 }
- 
+
 /* ── 게이지 컨테이너 ── */
 .gauge-grid {
     display: grid;
@@ -223,108 +243,155 @@ header[data-testid="stHeader"],
     margin-bottom: 20px;
 }
 .gauge-card {
-    background: #161b22;
-    border: 1px solid #21262d;
-    border-radius: 8px;
-    padding: 14px 16px;
+    background: #ffffff;
+    border: 1px solid #c8e4f5;
+    border-radius: 10px;
+    padding: 16px 18px;
+    box-shadow: 0 2px 8px rgba(74,159,212,0.06);
 }
-.gauge-name { font-size: 0.78rem; color: #8b949e; margin-bottom: 4px; }
-.gauge-val  { font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; font-weight: 600; color: #e6edf3; margin-bottom: 8px; }
- 
+.gauge-name { font-size: 0.95rem !important; color: #5a8aaa; margin-bottom: 4px; font-weight: 500; }
+.gauge-val  { font-family: 'JetBrains Mono', monospace; font-size: 1.2rem !important; font-weight: 700; color: #1a2e4a; margin-bottom: 8px; }
+
 /* ── 챗봇 ── */
 .chat-quick-btn {
-    background: #21262d;
-    border: 1px solid #30363d;
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.5);
     border-radius: 20px;
-    color: #c9d1d9;
-    font-size: 0.8rem;
-    padding: 6px 14px;
+    color: #ffffff;
+    font-size: 0.95rem !important;
+    padding: 8px 16px;
     margin: 3px;
     cursor: pointer;
     display: inline-block;
 }
- 
+
 /* ── 알림 배너 ── */
 .alert-banner {
-    border-radius: 8px;
-    padding: 12px 18px;
+    border-radius: 10px;
+    padding: 14px 20px;
     margin-bottom: 16px;
-    font-size: 0.875rem;
+    font-size: 1rem !important;
+    font-weight: 600;
     display: flex;
     align-items: center;
     gap: 10px;
 }
-.alert-danger  { background: rgba(248,81,73,0.1);  border: 1px solid rgba(248,81,73,0.3);  color: #f85149; }
-.alert-warning { background: rgba(210,153,34,0.1); border: 1px solid rgba(210,153,34,0.3); color: #d29922; }
- 
+.alert-danger  { background: rgba(229,62,62,0.08); border: 1px solid rgba(229,62,62,0.35); color: #c53030; }
+.alert-warning { background: rgba(217,119,6,0.08); border: 1px solid rgba(217,119,6,0.35); color: #b45309; }
+
 /* ── 이력 테이블 ── */
 .history-row {
     display: grid;
-    grid-template-columns: 100px 100px 1fr 80px;
+    grid-template-columns: 110px 110px 1fr 90px;
     gap: 12px;
-    padding: 12px 0;
-    border-bottom: 1px solid #21262d;
-    font-size: 0.85rem;
-    color: #c9d1d9;
+    padding: 14px 0;
+    border-bottom: 1px solid #d4eaf7;
+    font-size: 1rem !important;
+    color: #1a2e4a;
     align-items: center;
 }
 .history-row:last-child { border-bottom: none; }
-.history-date { font-family: 'JetBrains Mono', monospace; color: #8b949e; }
+.history-date { font-family: 'JetBrains Mono', monospace; color: #5a8aaa; font-size: 0.95rem !important; }
 .history-type-badge {
-    font-size: 0.7rem;
-    padding: 2px 8px;
+    font-size: 0.9rem !important;
+    padding: 4px 12px;
     border-radius: 12px;
     display: inline-block;
+    font-weight: 600;
 }
-.type-regular  { background: rgba(88,166,255,0.15); color: #58a6ff; }
-.type-urgent   { background: rgba(248,81,73,0.15);  color: #f85149; }
-.type-check    { background: rgba(63,185,80,0.15);  color: #3fb950; }
- 
+.type-regular  { background: rgba(26,110,168,0.12); color: #1a6ea8; }
+.type-urgent   { background: rgba(229,62,62,0.12);  color: #c53030; }
+.type-check    { background: rgba(22,163,74,0.12);  color: #15803d; }
+
 /* ── Metric 스타일 재정의 ── */
 [data-testid="stMetric"] {
-    background: #161b22;
-    border: 1px solid #21262d;
-    border-radius: 8px;
-    padding: 14px 18px;
+    background: #ffffff;
+    border: 1px solid #c8e4f5;
+    border-radius: 10px;
+    padding: 16px 20px;
+    box-shadow: 0 2px 8px rgba(74,159,212,0.08);
 }
-[data-testid="stMetricLabel"] { color: #c9d1d9 !important; font-size: 0.82rem !important; font-weight: 500 !important; }
-[data-testid="stMetricValue"] { color: #e6edf3 !important; font-family: 'JetBrains Mono', monospace; font-size: 1.5rem !important; font-weight: 700 !important; }
+[data-testid="stMetricLabel"] { color: #5a8aaa !important; font-size: 1rem !important; font-weight: 600 !important; }
+[data-testid="stMetricValue"] { color: #1a2e4a !important; font-family: 'JetBrains Mono', monospace; font-size: 1.9rem !important; font-weight: 700 !important; }
 
 /* ── 메인 텍스트 가독성 ── */
-p, span, div, li { color: #e6edf3; }
-.stMarkdown p { color: #c9d1d9 !important; font-size: 0.9rem; line-height: 1.7; }
-h1, h2, h3 { color: #e6edf3 !important; }
-caption, .caption { color: #8b949e !important; }
+p, span, li { color: #1a2e4a; }
+.stMarkdown p { color: #2d4a6b !important; font-size: 1rem !important; line-height: 1.7; }
+h1, h2, h3 { color: #1a2e4a !important; }
+caption, .caption { color: #5a8aaa !important; font-size: 0.95rem !important; }
 
 /* ── expander 가독성 ── */
-[data-testid="stExpander"] summary { color: #c9d1d9 !important; font-size: 0.9rem; }
-[data-testid="stExpander"] p { color: #c9d1d9 !important; }
- 
+[data-testid="stExpander"] {
+    background: #ffffff !important;
+    border: 1px solid #c8e4f5 !important;
+    border-radius: 10px !important;
+}
+[data-testid="stExpander"] details {
+    background: #ffffff !important;
+}
+[data-testid="stExpander"] summary { 
+    color: #1a2e4a !important; 
+    font-size: 1rem !important; 
+    font-weight: 600;
+    background: #f0f6ff !important;
+    border-radius: 10px !important;
+    padding: 12px 16px !important;
+}
+[data-testid="stExpander"] p { color: #2d4a6b !important; font-size: 1rem !important; }
+
 /* ── 공통 카드 컨테이너 ── */
 .info-card {
-    background: #161b22;
-    border: 1px solid #21262d;
-    border-radius: 10px;
+    background: #ffffff;
+    border: 1px solid #c8e4f5;
+    border-radius: 12px;
     padding: 20px;
+    box-shadow: 0 2px 10px rgba(74,159,212,0.08);
 }
- 
+
 /* ── 버튼 ── */
 .stButton > button {
-    background: #21262d;
-    color: #c9d1d9;
-    border: 1px solid #30363d;
-    border-radius: 6px;
-    font-size: 0.85rem;
-    padding: 6px 14px;
+    background: #a8d8ea;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem !important;
+    font-weight: 600;
+    padding: 10px 20px;
+    box-shadow: 0 2px 8px rgba(90,179,212,0.3);
 }
 .stButton > button:hover {
-    background: #30363d;
-    border-color: #58a6ff;
-    color: #58a6ff;
+    background: #3a9ec4;
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(90,179,212,0.4);
 }
- 
+
 /* ── 입력 필드 ── */
-.stSelectbox > div, .stNumberInput > div { background: #161b22 !important; }
+.stSelectbox > div, .stNumberInput > div { background: #ffffff !important; }
+.stSelectbox label, .stNumberInput label { color: #1a2e4a !important; font-size: 1rem !important; font-weight: 600; }
+[data-testid="stWidgetLabel"] { color: #1a2e4a !important; font-size: 1rem !important; font-weight: 600; }
+
+/* ── select/multiselect 드롭다운 흰색 배경 ── */
+[data-baseweb="select"] { background: #ffffff !important; }
+[data-baseweb="select"] > div { background: #ffffff !important; color: #1a2e4a !important; }
+[data-baseweb="menu"] { background: #ffffff !important; border: 1px solid #c8e4f5 !important; box-shadow: 0 4px 16px rgba(74,159,212,0.15) !important; }
+[data-baseweb="menu"] ul { background: #ffffff !important; }
+[data-baseweb="option"] { color: #1a2e4a !important; font-size: 1rem !important; background: #ffffff !important; }
+[data-baseweb="option"]:hover { background: #e8f4fb !important; color: #1a2e4a !important; }
+[data-baseweb="tag"] { background: #d4eaf7 !important; color: #1a6ea8 !important; font-size: 0.95rem !important; }
+[data-baseweb="tag"] span { color: #1a6ea8 !important; }
+/* multiselect 전체 컨테이너 */
+[data-baseweb="popover"] { background: #ffffff !important; }
+div[data-baseweb="select"] span { color: #1a2e4a !important; }
+/* selectbox 선택된 값 */
+[data-testid="stSelectbox"] [data-baseweb="select"] { background: #ffffff !important; }
+[data-testid="stSelectbox"] [data-baseweb="select"] div { color: #1a2e4a !important; background: #ffffff !important; }
+
+/* ── 데이터프레임 ── */
+.stDataFrame { font-size: 1rem !important; }
+
+/* ── 전체 텍스트 크기 보정 ── */
+[data-testid="stText"] { font-size: 1rem !important; color: #1a2e4a !important; }
+small { font-size: 0.9rem !important; color: #5a8aaa; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -599,7 +666,7 @@ def draw_engine_monitor(sensor_status_dict):
         margin=dict(l=0, r=0, t=10, b=0),
         height=350,
         paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="#ffffff",
         showlegend=False
     )
     return fig
@@ -885,24 +952,24 @@ with tab_overview:
 
         sc1, sc2, sc3, sc4 = st.columns(4)
         with sc1:
-            st.markdown(f'''<div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:18px 20px;">
-                <div style="color:#8b949e;font-size:0.82rem;margin-bottom:6px;font-weight:500;">전체 엔진</div>
-                <div style="font-size:2rem;font-weight:700;color:#e6edf3;font-family:JetBrains Mono;">{total}<span style="font-size:1rem;color:#8b949e;margin-left:4px;">대</span></div>
+            st.markdown(f'''<div style="background:#ffffff;border:1px solid #c8e4f5;border-radius:12px;padding:20px 22px;box-shadow:0 2px 10px rgba(74,159,212,0.08);">
+                <div style="color:#5a8aaa;font-size:1rem;margin-bottom:8px;font-weight:600;">전체 엔진</div>
+                <div style="font-size:2.2rem;font-weight:700;color:#1a2e4a;font-family:JetBrains Mono;">{total}<span style="font-size:1.1rem;color:#5a8aaa;margin-left:6px;">대</span></div>
             </div>''', unsafe_allow_html=True)
         with sc2:
-            st.markdown(f'''<div style="background:rgba(248,81,73,0.12);border:1px solid rgba(248,81,73,0.5);border-radius:10px;padding:18px 20px;">
-                <div style="color:#f85149;font-size:0.82rem;margin-bottom:6px;font-weight:500;">🔴 즉시 점검</div>
-                <div style="font-size:2rem;font-weight:700;color:#f85149;font-family:JetBrains Mono;">{n_danger}<span style="font-size:1rem;margin-left:4px;">대</span></div>
+            st.markdown(f'''<div style="background:rgba(229,62,62,0.06);border:1px solid rgba(229,62,62,0.4);border-radius:12px;padding:20px 22px;box-shadow:0 2px 10px rgba(229,62,62,0.08);">
+                <div style="color:#c53030;font-size:1rem;margin-bottom:8px;font-weight:600;">🔴 즉시 점검</div>
+                <div style="font-size:2.2rem;font-weight:700;color:#e53e3e;font-family:JetBrains Mono;">{n_danger}<span style="font-size:1.1rem;margin-left:6px;">대</span></div>
             </div>''', unsafe_allow_html=True)
         with sc3:
-            st.markdown(f'''<div style="background:rgba(210,153,34,0.12);border:1px solid rgba(210,153,34,0.5);border-radius:10px;padding:18px 20px;">
-                <div style="color:#d29922;font-size:0.82rem;margin-bottom:6px;font-weight:500;">🟡 점검 예약</div>
-                <div style="font-size:2rem;font-weight:700;color:#d29922;font-family:JetBrains Mono;">{n_warning}<span style="font-size:1rem;margin-left:4px;">대</span></div>
+            st.markdown(f'''<div style="background:rgba(217,119,6,0.06);border:1px solid rgba(217,119,6,0.4);border-radius:12px;padding:20px 22px;box-shadow:0 2px 10px rgba(217,119,6,0.08);">
+                <div style="color:#b45309;font-size:1rem;margin-bottom:8px;font-weight:600;">🟡 점검 예약</div>
+                <div style="font-size:2.2rem;font-weight:700;color:#d97706;font-family:JetBrains Mono;">{n_warning}<span style="font-size:1.1rem;margin-left:6px;">대</span></div>
             </div>''', unsafe_allow_html=True)
         with sc4:
-            st.markdown(f'''<div style="background:rgba(63,185,80,0.12);border:1px solid rgba(63,185,80,0.5);border-radius:10px;padding:18px 20px;">
-                <div style="color:#3fb950;font-size:0.82rem;margin-bottom:6px;font-weight:500;">🟢 정상 운행</div>
-                <div style="font-size:2rem;font-weight:700;color:#3fb950;font-family:JetBrains Mono;">{n_normal}<span style="font-size:1rem;margin-left:4px;">대</span></div>
+            st.markdown(f'''<div style="background:rgba(22,163,74,0.06);border:1px solid rgba(22,163,74,0.4);border-radius:12px;padding:20px 22px;box-shadow:0 2px 10px rgba(22,163,74,0.08);">
+                <div style="color:#15803d;font-size:1rem;margin-bottom:8px;font-weight:600;">🟢 정상 운행</div>
+                <div style="font-size:2.2rem;font-weight:700;color:#16a34a;font-family:JetBrains Mono;">{n_normal}<span style="font-size:1.1rem;margin-left:6px;">대</span></div>
             </div>''', unsafe_allow_html=True)
 
         # ── 잔여 수명 분포 (요약 바로 아래) ──
@@ -920,10 +987,10 @@ with tab_overview:
                            annotation_text="주의(60)", annotation_position="top right",
                            annotation_font_color="#d29922")
         fig_dist.update_layout(
-            template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            template="plotly_white", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="#ffffff",
             xaxis_title="잔여 수명 (사이클)", yaxis_title="엔진 수",
             height=210, margin=dict(l=0, r=0, t=20, b=0),
-            font=dict(family="Noto Sans KR", color="#c9d1d9"),
+            font=dict(family="Noto Sans KR", color="#3a9ec4"),
         )
         st.plotly_chart(fig_dist, use_container_width=True)
 
@@ -983,7 +1050,7 @@ with tab_overview:
                             <span class="card-engine-id">{icon} 엔진 #{int(row['unit_nr'])}</span>
                             <span class="badge {css_class}">{status_name}</span>
                         </div>
-                        <div class="rul-value">{rul} <span style="font-size:0.85rem;color:#8b949e;">사이클</span></div>
+                        <div class="rul-value">{rul} <span style="font-size:0.85rem;color:#5a8aaa;">사이클</span></div>
                         <div class="rul-label">예상 잔여 수명 · {period} ({rul_to_flights(rul)})</div>
                         <div class="progress-bar-bg">
                             <div class="progress-bar-fill" style="width:{pct}%; background:{color};"></div>
@@ -1003,21 +1070,21 @@ with tab_overview:
                         _pct     = min(100, int(_rul / _max_rul * 100))
 
                         st.markdown(f"""
-<div style="background:#0d1117;border:1px solid #21262d;border-radius:8px;padding:14px 16px;margin-bottom:10px;">
+<div style="background:#f0f6ff;border:1px solid #c8e4f5;border-radius:10px;padding:16px 18px;margin-bottom:10px;">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-    <span style="color:#8b949e;font-size:0.78rem;">잔여 수명 ({_pct}%)</span>
-    <span style="color:{_c};font-size:0.78rem;font-weight:600;">{_icon} {_status_name}</span>
+    <span style="color:#5a8aaa;font-size:0.95rem;font-weight:600;">잔여 수명 ({_pct}%)</span>
+    <span style="color:{_c};font-size:0.95rem;font-weight:700;">{_icon} {_status_name}</span>
   </div>
-  <div style="background:#21262d;border-radius:4px;height:8px;margin-bottom:8px;">
+  <div style="background:#d4eaf7;border-radius:4px;height:8px;margin-bottom:10px;">
     <div style="width:{_pct}%;background:{_c};height:8px;border-radius:4px;"></div>
   </div>
   <div style="display:flex;gap:20px;">
-    <div><div style="color:#8b949e;font-size:0.72rem;">잔여 사이클</div>
-         <div style="color:{_c};font-size:1.3rem;font-weight:700;">{_rul}</div></div>
-    <div><div style="color:#8b949e;font-size:0.72rem;">예상 기간</div>
-         <div style="color:#c9d1d9;font-size:0.9rem;">{_period}</div></div>
-    <div><div style="color:#8b949e;font-size:0.72rem;">잔여 운항</div>
-         <div style="color:#c9d1d9;font-size:0.9rem;">{_flights}</div></div>
+    <div><div style="color:#5a8aaa;font-size:0.9rem;font-weight:500;">잔여 사이클</div>
+         <div style="color:{_c};font-size:1.5rem;font-weight:700;">{_rul}</div></div>
+    <div><div style="color:#5a8aaa;font-size:0.9rem;font-weight:500;">예상 기간</div>
+         <div style="color:#1a2e4a;font-size:1rem;font-weight:600;">{_period}</div></div>
+    <div><div style="color:#5a8aaa;font-size:0.9rem;font-weight:500;">잔여 운항</div>
+         <div style="color:#1a2e4a;font-size:1rem;font-weight:600;">{_flights}</div></div>
   </div>
 </div>""", unsafe_allow_html=True)
 
@@ -1043,23 +1110,23 @@ with tab_overview:
                                 # 위험도 높은 부품 순 정렬
                                 _sorted_parts = sorted(_anomaly_parts.items(), key=lambda x: x[1][2], reverse=True)
 
-                                st.markdown('<div style="color:#8b949e;font-size:0.75rem;margin-bottom:6px;font-weight:600;letter-spacing:0.05em;">부품별 이상 징후</div>', unsafe_allow_html=True)
+                                st.markdown('<div style="color:#5a8aaa;font-size:0.9rem;margin-bottom:8px;font-weight:600;letter-spacing:0.05em;">부품별 이상 징후</div>', unsafe_allow_html=True)
                                 _part_html = ""
                                 for _pname, (_sname, _slbl, _ssc, _scol) in _sorted_parts[:5]:
                                     _bar_w = min(100, _ssc)
                                     _sensor_kr = SENSOR_META.get(_sname, {}).get('name', _sname)
                                     _part_html += f"""
-<div style="margin-bottom:8px;">
-  <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
-    <span style="color:#c9d1d9;font-size:0.8rem;">{_pname}</span>
-    <span style="color:{_scol};font-size:0.78rem;font-weight:600;">{_slbl} ({_ssc}%)</span>
+<div style="margin-bottom:10px;">
+  <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+    <span style="color:#1a2e4a;font-size:0.95rem;font-weight:600;">{_pname}</span>
+    <span style="color:{_scol};font-size:0.9rem;font-weight:700;">{_slbl} ({_ssc}%)</span>
   </div>
-  <div style="background:#21262d;border-radius:3px;height:5px;">
-    <div style="width:{_bar_w}%;background:{_scol};height:5px;border-radius:3px;"></div>
+  <div style="background:#d4eaf7;border-radius:3px;height:6px;">
+    <div style="width:{_bar_w}%;background:{_scol};height:6px;border-radius:3px;"></div>
   </div>
-  <div style="color:#6e7681;font-size:0.7rem;margin-top:2px;">주요 센서: {_sensor_kr}</div>
+  <div style="color:#5a8aaa;font-size:0.88rem;margin-top:3px;">주요 센서: {_sensor_kr}</div>
 </div>"""
-                                st.markdown(f'<div style="background:#0d1117;border:1px solid #21262d;border-radius:8px;padding:12px 14px;margin-bottom:10px;">{_part_html}</div>', unsafe_allow_html=True)
+                                st.markdown(f'<div style="background:#f0f6ff;border:1px solid #c8e4f5;border-radius:10px;padding:14px 16px;margin-bottom:10px;">{_part_html}</div>', unsafe_allow_html=True)
 
                                 # 권고 조치
                                 _dom_part = _sorted_parts[0][0] if _sorted_parts else None
@@ -1072,17 +1139,17 @@ with tab_overview:
                                 }
                                 _rec_action = _part_actions_exp.get(_dom_part, "전체 보어스코프 검사 실시")
                                 st.markdown(f"""
-<div style="background:rgba(248,81,73,0.08);border:1px solid rgba(248,81,73,0.25);border-radius:8px;padding:10px 14px;">
-  <div style="color:#f85149;font-size:0.75rem;font-weight:600;margin-bottom:4px;">📋 권고 조치</div>
-  <div style="color:#c9d1d9;font-size:0.82rem;">{_rec_action}</div>
+<div style="background:rgba(229,62,62,0.06);border:1px solid rgba(229,62,62,0.3);border-radius:10px;padding:12px 16px;">
+  <div style="color:#c53030;font-size:0.9rem;font-weight:700;margin-bottom:6px;">📋 권고 조치</div>
+  <div style="color:#1a2e4a;font-size:0.95rem;">{_rec_action}</div>
 </div>""" if _css == "danger" else f"""
-<div style="background:rgba(210,153,34,0.08);border:1px solid rgba(210,153,34,0.25);border-radius:8px;padding:10px 14px;">
-  <div style="color:#d29922;font-size:0.75rem;font-weight:600;margin-bottom:4px;">📋 권고 조치</div>
-  <div style="color:#c9d1d9;font-size:0.82rem;">{_rec_action}</div>
+<div style="background:rgba(217,119,6,0.06);border:1px solid rgba(217,119,6,0.3);border-radius:10px;padding:12px 16px;">
+  <div style="color:#b45309;font-size:0.9rem;font-weight:700;margin-bottom:6px;">📋 권고 조치</div>
+  <div style="color:#1a2e4a;font-size:0.95rem;">{_rec_action}</div>
 </div>""" if _css == "warning" else f"""
-<div style="background:rgba(63,185,80,0.08);border:1px solid rgba(63,185,80,0.25);border-radius:8px;padding:10px 14px;">
-  <div style="color:#3fb950;font-size:0.75rem;font-weight:600;margin-bottom:4px;">✅ 상태</div>
-  <div style="color:#c9d1d9;font-size:0.82rem;">정상 운행 가능. 정기 모니터링 유지.</div>
+<div style="background:rgba(22,163,74,0.06);border:1px solid rgba(22,163,74,0.3);border-radius:10px;padding:12px 16px;">
+  <div style="color:#15803d;font-size:0.9rem;font-weight:700;margin-bottom:6px;">✅ 상태</div>
+  <div style="color:#1a2e4a;font-size:0.95rem;">정상 운행 가능. 정기 모니터링 유지.</div>
 </div>""", unsafe_allow_html=True)
                         except Exception:
                             st.caption("센서 데이터를 불러올 수 없습니다.")
@@ -1121,21 +1188,21 @@ with tab_engine:
 
             h1, h2, h3, h4 = st.columns(4)
             # 상태별 배경색 (f-string 밖에서 정의)
-            _status_bg  = {"danger": "rgba(248,81,73,0.18)",  "warning": "rgba(210,153,34,0.18)",  "normal": "rgba(63,185,80,0.15)"}
-            _status_brd = {"danger": "rgba(248,81,73,0.5)",   "warning": "rgba(210,153,34,0.5)",   "normal": "rgba(63,185,80,0.4)"}
-            _bg  = _status_bg.get(css_class, "#161b22")
-            _brd = _status_brd.get(css_class, "#21262d")
-            # 공통 카드 스타일 — 높이·패딩·폰트 크기 완전 통일
-            _card_base = "border-radius:8px;padding:20px 22px;height:110px;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;"
-            _lbl_style = "color:#8b949e;font-size:0.78rem;margin-bottom:8px;font-weight:500;"
-            _val_style = "font-size:1.8rem;font-weight:800;font-family:'JetBrains Mono',monospace;line-height:1;"
-            _sub_style = "color:#8b949e;font-size:0.72rem;margin-top:6px;"
+            _status_bg  = {"danger": "rgba(229,62,62,0.08)",   "warning": "rgba(217,119,6,0.08)",   "normal": "rgba(22,163,74,0.08)"}
+            _status_brd = {"danger": "rgba(229,62,62,0.4)",    "warning": "rgba(217,119,6,0.4)",    "normal": "rgba(22,163,74,0.4)"}
+            _bg  = _status_bg.get(css_class, "#ffffff")
+            _brd = _status_brd.get(css_class, "#c8e4f5")
+            # 공통 카드 스타일
+            _card_base = "border-radius:12px;padding:20px 22px;height:120px;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;box-shadow:0 2px 10px rgba(74,159,212,0.08);"
+            _lbl_style = "color:#5a8aaa;font-size:0.95rem;margin-bottom:8px;font-weight:600;"
+            _val_style = "font-size:2rem;font-weight:800;font-family:'JetBrains Mono',monospace;line-height:1;"
+            _sub_style = "color:#5a8aaa;font-size:0.9rem;margin-top:6px;"
 
             with h1:
                 st.markdown(f"""
-                <div style="background:#161b22;border:1px solid #21262d;{_card_base}">
+                <div style="background:#ffffff;border:1px solid #c8e4f5;{_card_base}">
                     <div style="{_lbl_style}">엔진 번호</div>
-                    <div style="{_val_style}color:#e6edf3;">#{unit_id}</div>
+                    <div style="{_val_style}color:#1a2e4a;">#{unit_id}</div>
                 </div>""", unsafe_allow_html=True)
             with h2:
                 st.markdown(f"""
@@ -1145,15 +1212,15 @@ with tab_engine:
                 </div>""", unsafe_allow_html=True)
             with h3:
                 st.markdown(f"""
-                <div style="background:#161b22;border:1px solid #21262d;{_card_base}">
+                <div style="background:#ffffff;border:1px solid #c8e4f5;{_card_base}">
                     <div style="{_lbl_style}">현재까지 총 사이클</div>
-                    <div style="{_val_style}color:#e6edf3;">{_total_cycles}<span style="font-size:0.85rem;color:#8b949e;margin-left:4px;">회</span></div>
+                    <div style="{_val_style}color:#1a2e4a;">{_total_cycles}<span style="font-size:0.95rem;color:#5a8aaa;margin-left:6px;">회</span></div>
                 </div>""", unsafe_allow_html=True)
             with h4:
                 st.markdown(f"""
-                <div style="background:#161b22;border:1px solid #21262d;{_card_base}">
+                <div style="background:#ffffff;border:1px solid #c8e4f5;{_card_base}">
                     <div style="{_lbl_style}">예상 잔여 수명</div>
-                    <div style="{_val_style}color:{color};">{pred_rul}<span style="font-size:0.85rem;color:#8b949e;margin-left:4px;">사이클</span></div>
+                    <div style="{_val_style}color:{color};">{pred_rul}<span style="font-size:0.95rem;color:#5a8aaa;margin-left:6px;">사이클</span></div>
                     <div style="{_sub_style}">{period} · {rul_to_flights(pred_rul)}</div>
                 </div>""", unsafe_allow_html=True)
  
@@ -1168,27 +1235,28 @@ with tab_engine:
             fig_gauge = go.Figure(go.Indicator(
                 mode="gauge+number",
                 value=remain_pct,
-                title={'text': "잔여 수명 (%)", 'font': {'color': '#8b949e', 'size': 14}},
-                number={'suffix': "%", 'font': {'color': '#e6edf3', 'size': 36}},
+                title={'text': "잔여 수명 (%)", 'font': {'color': '#5a8aaa', 'size': 14}},
+                number={'suffix': "%", 'font': {'color': '#1a2e4a', 'size': 36}},
                 gauge={
-                    'axis': {'range': [0, 100], 'tickcolor': '#8b949e'},
+                    'axis': {'range': [0, 100], 'tickcolor': '#5a8aaa', 'tickfont': {'color': '#1a2e4a'}},
                     'bar': {'color': color},
-                    'bgcolor': '#21262d',
-                    'bordercolor': '#30363d',
+                    'bgcolor': '#d4eaf7',
+                    'bordercolor': '#c8e4f5',
                     'steps': [
-                        {'range': [0, 20],  'color': 'rgba(248,81,73,0.15)'},
-                        {'range': [20, 40], 'color': 'rgba(210,153,34,0.08)'},
-                        {'range': [40, 100],'color': 'rgba(63,185,80,0.05)'},
+                        {'range': [0, 20],  'color': 'rgba(229,62,62,0.12)'},
+                        {'range': [20, 40], 'color': 'rgba(217,119,6,0.08)'},
+                        {'range': [40, 100],'color': 'rgba(22,163,74,0.06)'},
                     ],
                     'threshold': {
-                        'line': {'color': '#f85149', 'width': 2},
+                        'line': {'color': '#e53e3e', 'width': 2},
                         'thickness': 0.75, 'value': 20
                     }
                 }
             ))
             fig_gauge.update_layout(
                 paper_bgcolor="rgba(0,0,0,0)",
-                font=dict(color='#8b949e', family='Noto Sans KR'),
+                plot_bgcolor="#ffffff",
+                font=dict(color='#1a2e4a', family='Noto Sans KR'),
                 height=260,
                 margin=dict(l=30, r=30, t=30, b=10),
             )
@@ -1271,7 +1339,7 @@ with tab_engine:
                         with col:
                             st.markdown(f"""
                             <div class="info-card" style="text-align:center;padding:14px 10px;">
-                                <div style="color:#c9d1d9;font-size:0.8rem;font-weight:600;margin-bottom:6px;">{part_name}</div>
+                                <div style="color:#2d4a6b;font-size:0.8rem;font-weight:600;margin-bottom:6px;">{part_name}</div>
                                 <div style="font-size:1.5rem;font-weight:700;color:{r_color};">{risk_pct}%</div>
                                 <div style="font-size:0.78rem;color:{r_color};margin-bottom:6px;font-weight:500;">{r_label}</div>
                                 <div class="progress-bar-bg">
@@ -1345,13 +1413,13 @@ with tab_engine:
                                           color=p_color if risk_p > 50 else '#3fb950'),
                             ))
                         fig_traj.update_layout(
-                            template="plotly_dark",
+                            template="plotly_white",
                             paper_bgcolor="rgba(0,0,0,0)",
-                            plot_bgcolor="rgba(0,0,0,0)",
+                            plot_bgcolor="#ffffff",
                             xaxis_title=f"운전 사이클 수 (현재: {int(df_raw['time_cycles'].max())}회)",
                             height=260,
                             margin=dict(l=0, r=0, t=10, b=0),
-                            font=dict(family="Noto Sans KR"),
+                            font=dict(family="Noto Sans KR", color="#3a9ec4"),
                             legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(size=10)),
                         )
                         st.plotly_chart(fig_traj, use_container_width=True)
@@ -1369,14 +1437,14 @@ with tab_engine:
                             nums = ["①", "②", "③"]
                             action_lines = " ".join(f"{nums[i]} {a}" for i, a in enumerate(actions_t2[:3]))
                             st.markdown(
-                                f'<div style="background:rgba(255,255,255,0.04);border-left:3px solid {p_color};'
-                                f'padding:10px 14px;border-radius:6px;font-size:0.82rem;color:#c9d1d9;margin-top:4px;">'
+                                f'<div style="background:rgba(74,159,212,0.08);border-left:3px solid {p_color};'
+                                f'padding:12px 16px;border-radius:6px;font-size:0.95rem;color:#1a2e4a;margin-top:6px;font-weight:500;">'
                                 f'📋 <strong>권고 조치:</strong> {action_lines}</div>',
                                 unsafe_allow_html=True
                             )
                         else:
                             st.markdown(
-                                '<div style="font-size:0.82rem;color:#3fb950;margin-top:4px;">✅ 현재 정상 범위 — 정기 모니터링 유지</div>',
+                                '<div style="font-size:0.95rem;color:#16a34a;margin-top:6px;font-weight:600;">✅ 현재 정상 범위 — 정기 모니터링 유지</div>',
                                 unsafe_allow_html=True
                             )
 
@@ -1398,14 +1466,14 @@ with tab_engine:
             fig_bar.add_hline(y=30, line_dash="dot", line_color="#f85149", annotation_text="위험 기준")
             fig_bar.add_hline(y=60, line_dash="dot", line_color="#d29922", annotation_text="주의 기준")
             fig_bar.update_layout(
-                template="plotly_dark",
+                template="plotly_white",
                 paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="#ffffff",
                 xaxis_title="엔진 번호",
                 yaxis_title="잔여 수명 (사이클)",
                 height=320,
                 margin=dict(l=0, r=0, t=20, b=0),
-                font=dict(family="Noto Sans KR"),
+                font=dict(family="Noto Sans KR", color="#3a9ec4"),
                 showlegend=False,
             )
             st.plotly_chart(fig_bar, use_container_width=True)
@@ -1491,14 +1559,14 @@ with tab_sensor:
                     align-items:center;
                     box-sizing:border-box;
                 ">
-                    <div style="font-size:1rem;color:#8b949e;letter-spacing:0.05em;margin-bottom:16px;">엔진 종합 상태 점수</div>
+                    <div style="font-size:1rem;color:#5a8aaa;letter-spacing:0.05em;margin-bottom:16px;font-weight:600;">엔진 종합 상태 점수</div>
                     <div style="font-size:4.5rem;font-weight:800;color:{s_color};line-height:1;margin-bottom:8px;">
-                        {int(100 - worst_score)}<span style="font-size:1.8rem;color:#8b949e;"> / 100</span>
+                        {int(100 - worst_score)}<span style="font-size:1.8rem;color:#5a8aaa;"> / 100</span>
                     </div>
-                    <div style="padding:6px 22px;border-radius:20px;background:{s_color}33;color:{s_color};display:inline-block;font-weight:700;font-size:1rem;margin:12px 0;">
+                    <div style="padding:6px 22px;border-radius:20px;background:{s_color}22;color:{s_color};display:inline-block;font-weight:700;font-size:1.1rem;margin:12px 0;">
                         {status_name}
                     </div>
-                    <div style="font-size:0.88rem;color:#c9d1d9;margin-top:14px;line-height:1.6;max-width:220px;">{s_msg}</div>
+                    <div style="font-size:0.95rem;color:#2d4a6b;margin-top:14px;line-height:1.6;max-width:220px;">{s_msg}</div>
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -1524,9 +1592,9 @@ with tab_sensor:
                         _display_status = "정상" if score < 30 else "관찰" if score < 55 else "⚠ 이상"
                     st.markdown(
                         f'<div class="info-card" style="margin-bottom:10px;">'
-                        f'<div style="color:#8b949e;font-size:0.72rem;">{meta["name"]}</div>'
-                        f'<div style="font-family:JetBrains Mono;font-size:1.1rem;color:#e6edf3;">{val:.2f} <small>{meta["unit"]}</small></div>'
-                        f'<div style="font-size:0.7rem;color:{color};">{_display_status}</div>'
+                        f'<div style="color:#5a8aaa;font-size:0.9rem;font-weight:600;">{meta["name"]}</div>'
+                        f'<div style="font-family:JetBrains Mono;font-size:1.2rem;color:#1a2e4a;font-weight:700;">{val:.2f} <small style="color:#5a8aaa;">{meta["unit"]}</small></div>'
+                        f'<div style="font-size:0.9rem;color:{color};font-weight:600;">{_display_status}</div>'
                         f'<div class="progress-bar-bg"><div class="progress-bar-fill" style="width:{min(score,100)}%;background:{color};"></div></div>'
                         f'</div>',
                         unsafe_allow_html=True
@@ -1578,12 +1646,12 @@ with tab_sensor:
                     df_p.rename(columns={s: sensor_label(s) for s in selected_s}, inplace=True)
                     df_p = df_p.melt('time_cycles', var_name='센서', value_name='측정값')
                     fig = px.line(df_p, x='time_cycles', y='측정값', color='센서',
-                                  template="plotly_dark")
+                                  template="plotly_white")
                     fig.update_layout(
-                        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="#ffffff",
                         xaxis_title="운전 사이클 수", yaxis_title="센서 측정값",
                         height=420, margin=dict(l=0,r=0,t=10,b=0),
-                        font=dict(family="Noto Sans KR"),
+                        font=dict(family="Noto Sans KR", color="#3a9ec4"),
                         legend=dict(bgcolor="rgba(0,0,0,0)"),
                     )
                     st.plotly_chart(fig, use_container_width=True)
@@ -1596,12 +1664,12 @@ with tab_sensor:
                             df_pp.rename(columns={s: sensor_label(s) for s in avail_p}, inplace=True)
                             df_pp = df_pp.melt('time_cycles', var_name='센서', value_name='보정값')
                             fig_p = px.line(df_pp, x='time_cycles', y='보정값', color='센서',
-                                            template="plotly_dark")
+                                            template="plotly_white")
                             fig_p.update_layout(
-                                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="#ffffff",
                                 xaxis_title="운전 사이클 수", yaxis_title="운항조건 보정값",
                                 height=420, margin=dict(l=0,r=0,t=10,b=0),
-                                font=dict(family="Noto Sans KR"),
+                                font=dict(family="Noto Sans KR", color="#3a9ec4"),
                                 legend=dict(bgcolor="rgba(0,0,0,0)"),
                             )
                             st.plotly_chart(fig_p, use_container_width=True)
@@ -1643,7 +1711,7 @@ with tab_sensor:
                     marker_color=chart_df["color"].tolist(),
                     text=[f"{v:.2f}  {d}" for v, d in zip(chart_df["연관도"], chart_df["방향"])],
                     textposition="outside",
-                    textfont=dict(color="#c9d1d9", size=11),
+                    textfont=dict(color="#1a2e4a", size=12),
                     hovertemplate="<b>%{y}</b><br>연관도: %{x:.2f}<extra></extra>",
                 ))
                 fig_top10.add_vline(x=0.7, line_dash="dot", line_color="#f85149",
@@ -1653,14 +1721,14 @@ with tab_sensor:
                                     annotation_text="보통 연관 (0.4)", annotation_position="top",
                                     annotation_font_color="#d29922")
                 fig_top10.update_layout(
-                    template="plotly_dark",
+                    template="plotly_white",
                     paper_bgcolor="rgba(0,0,0,0)",
-                    plot_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="#ffffff",
                     xaxis_title="수명 연관도 (0 = 무관, 1 = 매우 강한 연관)",
                     xaxis_range=[0, 1.15],
                     height=380,
                     margin=dict(l=0, r=120, t=20, b=0),
-                    font=dict(family="Noto Sans KR", color="#c9d1d9"),
+                    font=dict(family="Noto Sans KR", color="#3a9ec4"),
                     showlegend=False,
                 )
                 st.plotly_chart(fig_top10, use_container_width=True)
@@ -1672,9 +1740,9 @@ with tab_sensor:
                 st.markdown(f"""
                 <div class="info-card" style="border-left:4px solid #58a6ff;padding:14px 18px;">
                     <span style="color:#58a6ff;font-weight:600;">💡 핵심 모니터링 센서</span><br>
-                    <span style="color:#e6edf3;">현재 엔진에서 수명과 가장 강하게 연관된 센서는
+                    <span style="color:#1a2e4a;">현재 엔진에서 수명과 가장 강하게 연관된 센서는
                     <strong>{top1_sensor}</strong>입니다. (연관도 {top1_val:.2f})</span><br>
-                    <span style="color:#8b949e;font-size:0.82rem;">이 센서가 {top1_dir.split()[0]} 추세를 보일 경우 즉시 점검을 고려하세요.</span>
+                    <span style="color:#5a8aaa;font-size:0.82rem;">이 센서가 {top1_dir.split()[0]} 추세를 보일 경우 즉시 점검을 고려하세요.</span>
                 </div>""", unsafe_allow_html=True)
 
 
@@ -1808,18 +1876,18 @@ with tab_sensor:
                         marker_color=bar_colors,
                         text=[f"{'+' if v>0 else ''}{v:.1f}" for v in shap_top["shap_value"]],
                         textposition="outside",
-                        textfont=dict(color="#c9d1d9", size=11),
+                        textfont=dict(color="#1a2e4a", size=12),
                         hovertemplate="<b>%{y}</b><br>영향도: %{x:.2f} 사이클<extra></extra>",
                     ))
                     fig_shap.add_vline(x=0, line_color="#30363d", line_width=1)
                     fig_shap.update_layout(
-                        template="plotly_dark",
+                        template="plotly_white",
                         paper_bgcolor="rgba(0,0,0,0)",
-                        plot_bgcolor="rgba(0,0,0,0)",
+                        plot_bgcolor="#ffffff",
                         xaxis_title="수명 예측 영향도 (사이클 단위 / 오른쪽=수명 증가, 왼쪽=수명 감소)",
                         height=380,
                         margin=dict(l=0, r=80, t=10, b=0),
-                        font=dict(family="Noto Sans KR", color="#c9d1d9"),
+                        font=dict(family="Noto Sans KR", color="#3a9ec4"),
                         showlegend=False,
                     )
                     st.plotly_chart(fig_shap, use_container_width=True)
@@ -1843,9 +1911,9 @@ with tab_sensor:
                     if explain_lines:
                         explain_html = "<br>".join(explain_lines)
                         st.markdown(f"""
-                        <div class="info-card" style="border-left:4px solid #58a6ff;padding:16px 20px;line-height:2;">
-                            <div style="color:#58a6ff;font-weight:600;margin-bottom:10px;">🤖 AI 수명 예측 근거 요약</div>
-                            <div style="color:#c9d1d9;font-size:0.88rem;">{explain_html}</div>
+                        <div class="info-card" style="border-left:4px solid #1a6ea8;padding:16px 20px;line-height:2;">
+                            <div style="color:#1a6ea8;font-weight:700;margin-bottom:10px;font-size:1rem;">🤖 AI 수명 예측 근거 요약</div>
+                            <div style="color:#1a2e4a;font-size:0.95rem;">{explain_html}</div>
                         </div>""", unsafe_allow_html=True)
                 else:
                     st.info(f"💡 {result_msg}")
@@ -1894,7 +1962,7 @@ with tab_history:
                 <span class="history-date">{r['date']}</span>
                 <span class="history-type-badge {badge_cls}">{r['type']}</span>
                 <span>{r['note']}</span>
-                <span style="color:#8b949e;font-size:0.8rem;">{r['by']}</span>
+                <span style="color:#5a8aaa;font-size:0.8rem;">{r['by']}</span>
             </div>"""
         st.markdown(f'<div class="info-card">{rows_html}</div>', unsafe_allow_html=True)
     else:
@@ -1937,7 +2005,7 @@ with tab_history:
                     asyncio.set_event_loop(loop)
                     resp = loop.run_until_complete(run_chat(ai_agent, subset_choice, unit_id, query))
                     loop.close()
-                    st.markdown(f'<div class="info-card"><p style="color:#c9d1d9;line-height:1.7;">{resp}</p></div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="info-card"><p style="color:#1a2e4a;line-height:1.8;font-size:1rem;">{resp}</p></div>', unsafe_allow_html=True)
                 except Exception as e:
                     st.error(f"오류: {e}")
 
@@ -1998,10 +2066,10 @@ with tab_history:
                     badge = '✅ 접수완료' if already else '미접수'
                     badge_c = '#3fb950' if already else '#f85149'
                     st.markdown(
-                        f'<div class="info-card" style="border-left:4px solid #f85149;margin-bottom:6px;">'
-                        f'<span style="color:#f85149;font-weight:700;">엔진 #{uid}</span>'
-                        f'<span style="color:#8b949e;font-size:0.82rem;margin-left:10px;">잔여 {rul}사이클 ({days})</span>'
-                        f'<span style="float:right;color:{badge_c};font-size:0.78rem;">{badge}</span>'
+                        f'<div class="info-card" style="border-left:4px solid #e53e3e;margin-bottom:8px;">'
+                        f'<span style="color:#e53e3e;font-weight:700;font-size:1rem;">엔진 #{uid}</span>'
+                        f'<span style="color:#5a8aaa;font-size:0.95rem;margin-left:12px;">잔여 {rul}사이클 ({days})</span>'
+                        f'<span style="float:right;color:{badge_c};font-size:0.95rem;font-weight:700;">{badge}</span>'
                         f'</div>',
                         unsafe_allow_html=True
                     )
@@ -2039,3 +2107,5 @@ with tab_history:
             st.info("아직 접수된 점검이 없습니다. 위에서 엔진을 접수하세요.")
     else:
         st.info("데이터를 불러올 수 없습니다.")
+
+        
