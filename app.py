@@ -19,7 +19,7 @@ except ImportError:
     SHAP_AVAILABLE = False
  
 from pydantic_ai import Agent, RunContext
-from pydantic_ai.models.google import GoogleModel
+from pydantic_ai.models.gemini import GeminiModel
  
 # =========================================================
 # 1. 페이지 설정 & 전역 CSS
@@ -335,7 +335,7 @@ if "active_tab" not in st.session_state:
 # =========================================================
 # 2. 상수 & 매핑
 # =========================================================
-os.environ["GOOGLE_API_KEY"] = "AIzaSyD8P6Vd_4wjXn_6zblSLheGoPN77YirvHU"
+os.environ["GEMINI_API_KEY"] = st.secrets["GEMINI_API_KEY"]
  
 # 센서 코드 → 한글 명칭, 단위
 SENSOR_META = {
@@ -685,7 +685,7 @@ async def get_engine_data(ctx: RunContext[None], subset: str, unit_nr: int):
 @st.cache_resource
 def load_ai_agent():
     try:
-        model = GoogleModel('gemini-2.5-flash')
+        model = GeminiModel('gemini-2.5-flash')
         agent = Agent(
             model=model,
             system_prompt="""
