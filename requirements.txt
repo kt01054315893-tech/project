@@ -5,7 +5,7 @@ plotly
 duckdb
 pydantic-ai==0.0.12
 pydantic-ai-slim[google]==0.0.12
-griffe
+griffe==0.38.1
 google-generativeai
 scikit-learn
 joblib
