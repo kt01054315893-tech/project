@@ -9,6 +9,14 @@ import duckdb
 import re
 import asyncio
 from datetime import datetime
+
+try:
+    asyncio.get_event_loop()
+except RuntimeError:
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+# import asyncio  # Streamlit + pydantic-ai 동기 실행으로 변경하여 사용하지 않음
+from datetime import datetime
 def switch_to_tab(tab_index: int):
     """탭 전환 신호 저장 — rerun 후 해당 탭이 기본 선택됨."""
     st.session_state["active_tab"] = tab_index
@@ -18,7 +26,7 @@ try:
 except ImportError:
     SHAP_AVAILABLE = False
  
-from pydantic_ai import Agent, RunContext
+from pydantic_ai import Agent
 from pydantic_ai.models.gemini import GeminiModel
 
 # =========================================================
@@ -88,16 +96,20 @@ header[data-testid="stHeader"],
 }
 [data-testid="stSidebar"] [data-testid="stChatInput"] textarea {
     font-size: 1rem !important;
-    background: rgba(255,255,255,0.15) !important;
-    color: #ffffff !important;
-    border: 1px solid rgba(255,255,255,0.4) !important;
+    background: rgba(255,255,255,0.8) !important;
+    color: #1a2e4a !important;
+    border: 1px solid rgba(90,179,212,0.4) !important;
+}
+[data-testid="stSidebar"] [data-testid="stChatInput"] textarea::placeholder {
+    color: #5a7a9a !important;
+    opacity: 1 !important;
 }
 [data-testid="stSidebar"] [data-testid="stChatMessage"] {
     font-size: 1rem !important;
 }
 [data-testid="stSidebar"] [data-testid="stChatMessage"] p {
     font-size: 1rem !important;
-    color: #ffffff !important;
+    color: #1a2e4a !important;
 }
 [data-testid="stSidebar"] select,
 [data-testid="stSidebar"] input[type="number"] {
@@ -733,32 +745,50 @@ def load_my_model(model_path='model.pkl'):
         return None
  
 # =========================================================
-# 5. AI 에이전트 (개선된 시스템 프롬프트)
+# 5. AI 에이전트 (Streamlit 안전 동기 실행 버전)
 # =========================================================
-async def get_engine_data(ctx: RunContext[None], subset: str, unit_nr: int):
+def get_engine_data(subset: str, unit_nr: int):
     """특정 엔진의 최신 센서 및 잔여수명 정보를 DB에서 조회합니다."""
     try:
         table_name = f"test_{subset.lower()}"
-        con = duckdb.connect('cmapss.db', read_only=True)
-        query = f"SELECT * FROM {table_name} WHERE unit_nr = {unit_nr} ORDER BY time_cycles DESC LIMIT 1"
+        con = duckdb.connect("cmapss.db", read_only=True)
+        query = f"""
+        SELECT *
+        FROM {table_name}
+        WHERE unit_nr = {unit_nr}
+        ORDER BY time_cycles DESC
+        LIMIT 1
+        """
         df = con.execute(query).df()
         con.close()
+
         if df.empty:
             return f"엔진 #{unit_nr} 데이터를 찾을 수 없습니다."
-        return df.to_dict(orient='records')[0]
+
+        return df.to_dict(orient="records")[0]
+
     except Exception as e:
         return f"DB 조회 오류: {str(e)}"
- 
+
+
 @st.cache_resource
 def load_ai_agent():
     try:
-        model = GeminiModel('gemini-2.5-flash')
+        model = GeminiModel("gemini-2.5-flash")
+
         agent = Agent(
             model=model,
             system_prompt="""
 당신은 항공 엔진 예방정비 전문 AI 어시스턴트입니다.
+NASA CMAPSS 데이터셋 기반의 엔진 상태 관리 시스템에서 동작합니다.
 초보 정비사가 쉽게 이해할 수 있도록 도와주세요.
- 
+
+[답변 가능한 범위]
+- CMAPSS 데이터셋, 엔진 상태, 잔여 수명(RUL) 예측에 관한 질문
+- 특정 엔진의 센서 상태, 점검 시기, 부품 이상 징후
+- 데이터셋 FD001~FD004의 특징 및 차이점 설명
+- 일반적인 항공 엔진 정비 관련 질문
+
 [엄격한 답변 규칙]
 1. RMSE, MAE, NASA Score, Loss, pred_rul, actual_rul 같은 기술 용어는 절대 사용하지 마세요.
 2. 센서 코드(s_2, s_3 등)를 그대로 쓰지 말고 항상 한글 명칭으로 설명하세요.
@@ -769,71 +799,99 @@ def load_ai_agent():
 5. 불확실할 경우 "정밀 점검을 권고합니다"로 마무리하세요.
 6. 전문 용어 대신 정비사가 이해할 수 있는 일상 언어를 사용하세요.
 7. 온도, 압력, 속도 이상 시 어떤 부품을 확인해야 하는지 구체적으로 안내하세요.
- 
+
 [데이터 해석 기준]
 - 잔여수명 < 30사이클: 즉시 점검 필요 (위험)
 - 잔여수명 30~60사이클: 조속한 점검 예약 (주의)
 - 잔여수명 > 60사이클: 정상 운행 가능
+
+[CMAPSS 데이터셋 기본 정보]
+- FD001: 단일 운항 조건, 단일 고장 모드 (HPC 저하)
+- FD002: 복합 운항 조건, 단일 고장 모드 (HPC 저하)
+- FD003: 단일 운항 조건, 복합 고장 모드 (HPC + 팬 저하)
+- FD004: 복합 운항 조건, 복합 고장 모드 (HPC + 팬 저하)
 """,
         )
-        agent.tool(get_engine_data)
+
         return agent
+
     except Exception as e:
         st.error(f"AI 로드 실패: {e}")
         return None
- 
-async def run_chat(agent, subset: str, unit_nr: int, query: str) -> str:
+
+
+def run_chat(agent, subset: str, unit_nr: int, query: str) -> str:
+    """
+    Streamlit에서 안전하게 실행되는 동기형 AI 호출 함수.
+    기존 asyncio.new_event_loop(), loop.run_until_complete(), loop.close() 방식은
+    Streamlit rerun 구조와 충돌하여 'Event loop is closed' 오류를 만들 수 있으므로 사용하지 않습니다.
+    """
     try:
-        # 엔진 데이터 로드
         summary_df, _ = load_all_summary_best(subset)
 
-        latest = summary_df.drop_duplicates('unit_nr', keep='last')
-        row = latest[latest['unit_nr'] == unit_nr]
+        if summary_df is None:
+            return "엔진 요약 데이터를 불러올 수 없습니다. saved_models 폴더의 summary 파일을 확인하세요."
+
+        latest = summary_df.drop_duplicates("unit_nr", keep="last")
+        row = latest[latest["unit_nr"] == unit_nr]
 
         if row.empty:
-            return "엔진 데이터를 찾을 수 없습니다."
+            return f"엔진 #{unit_nr} 데이터를 찾을 수 없습니다. 엔진 번호를 다시 확인해주세요."
 
-        pred_rul = int(row['pred_rul'].iloc[0])
+        pred_rul = int(row["pred_rul"].iloc[0])
+        period = rul_to_period(pred_rul)
+        flights = rul_to_flights(pred_rul)
+        status_name, _, _, icon, action = get_rul_status(pred_rul)
 
-        # 센서 데이터
         df_raw = load_sensor_data(f"test_{subset.lower()}", unit_nr)
-
         useful_cols = [f"s_{i}" for i in USEFUL_SENSORS.get(subset, [])]
 
         sensor_summary = []
+        if df_raw is not None and not df_raw.empty:
+            for s in useful_cols[:8]:
+                if s not in df_raw.columns:
+                    continue
+                try:
+                    color, label, score = detect_sensor_status(df_raw[s])
+                    sensor_name = SENSOR_META.get(s, {}).get("name", s)
+                    sensor_summary.append(f"- {sensor_name}: {label} ({score}%)")
+                except Exception:
+                    pass
 
-        for s in useful_cols[:5]:
-            try:
-                color, label, score = detect_sensor_status(df_raw[s])
+        sensor_text = "\n".join(sensor_summary) if sensor_summary else "센서 요약 정보를 불러오지 못했습니다."
 
-                sensor_name = SENSOR_META.get(s, {}).get('name', s)
+        engine_latest = get_engine_data(subset, unit_nr)
 
-                sensor_summary.append(
-                    f"{sensor_name}: {label} ({score}%)"
-                )
-            except:
-                pass
-
-        sensor_text = "\n".join(sensor_summary)
-
-        ctx = f"""
+        prompt = f"""
 현재 엔진 정보:
 
 - 데이터셋: {subset}
 - 엔진 번호: {unit_nr}
+- 현재 상태: {icon} {status_name}
 - 예상 잔여 수명: {pred_rul} 사이클
-- 주요 센서 상태:
+- 예상 기간: {period}
+- 예상 잔여 운항 횟수: {flights}
+- 기본 권고: {action}
+
+주요 센서 상태:
 {sensor_text}
+
+최신 DB 조회 정보:
+{engine_latest}
 
 사용자 질문:
 {query}
 
-질문에 맞게 구체적으로 답변하세요.
+위 정보를 바탕으로 정비사가 이해하기 쉽게 답변하세요.
 """
 
-        result = await agent.run(ctx)
+        result = agent.run_sync(prompt)
 
-        return result.data if hasattr(result, 'data') else result.output
+        if hasattr(result, "data"):
+            return str(result.data)
+        if hasattr(result, "output"):
+            return str(result.output)
+        return str(result)
 
     except Exception as e:
         return f"❌ AI 오류: {str(e)}"
@@ -898,10 +956,7 @@ with st.sidebar:
             with chat_container.chat_message("assistant"):
                 with st.spinner("분석 중..."):
                     try:
-                        loop = asyncio.new_event_loop()
-                        asyncio.set_event_loop(loop)
-                        resp = loop.run_until_complete(run_chat(ai_agent, subset_choice, unit_id, prompt))
-                        loop.close()
+                        resp = run_chat(ai_agent, subset_choice, unit_id, prompt)
                     except Exception as e:
                         resp = f"❌ 오류: {e}"
                     st.write(resp)
@@ -1999,10 +2054,7 @@ with tab_history:
             with st.spinner("AI가 이력을 분석하고 있습니다..."):
                 query = f"엔진 #{unit_id}의 아래 점검 이력을 바탕으로 반복되는 문제 패턴과 향후 주의사항을 정비사가 이해하기 쉽게 설명해주세요.\n\n{history_text}"
                 try:
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-                    resp = loop.run_until_complete(run_chat(ai_agent, subset_choice, unit_id, query))
-                    loop.close()
+                    resp = run_chat(ai_agent, subset_choice, unit_id, query)
                     st.markdown(f'<div class="info-card"><p style="color:#1a2e4a;line-height:1.8;font-size:1rem;">{resp}</p></div>', unsafe_allow_html=True)
                 except Exception as e:
                     st.error(f"오류: {e}")
@@ -2105,5 +2157,3 @@ with tab_history:
             st.info("아직 접수된 점검이 없습니다. 위에서 엔진을 접수하세요.")
     else:
         st.info("데이터를 불러올 수 없습니다.")
-
-        
