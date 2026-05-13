@@ -336,7 +336,7 @@ anomaly_score = (slope_score + extremity) * 0.7 + rul_score * 0.3
 
 ## 라이선스
 
-본 프로젝트는 학술 목적으로 제작되었습니다.  
+본 프로젝트는 자기 개발 목적으로 제작되었습니다.  
 CMAPSS 데이터셋은 NASA Glenn Research Center에서 공개 제공합니다.
 
 > 참고: A. Saxena and K. Goebel (2008). "Turbofan Engine Degradation Simulation Data Set", NASA Ames Prognostics Data Repository, NASA Ames Research Center, Moffett Field, CA
@@ -345,7 +345,7 @@ CMAPSS 데이터셋은 NASA Glenn Research Center에서 공개 제공합니다.
 
 <div align="center">
 
-**✈️ CMAPSS 항공 엔진 예방정비 지능형 대시보드**  
+** CMAPSS 항공 엔진 예방정비 지능형 대시보드**  
 *Sparta Coding Club AI 트랙 팀 프로젝트*
 
 </div>
