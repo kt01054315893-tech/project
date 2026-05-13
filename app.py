@@ -1614,8 +1614,6 @@ with tab_sensor:
             _rec_sensors = [s for s in _rec_sensors if s in all_s]
             _n_rec = len(_rec_sensors)
 
-            st.caption(f"💡 {subset_choice} 핵심 센서 {_n_rec}개")
-
             # ── 핵심 센서 선택 버튼 ──
             # 버튼 클릭마다 ver 증가 → key 변경 → multiselect 재생성 → default 반영
             # rerun 없음 → 탭 위치 유지
