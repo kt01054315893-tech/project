@@ -900,7 +900,12 @@ def run_chat(agent, subset: str, unit_nr: int, query: str) -> str:
 # 6. 사이드바
 # =========================================================
 with st.sidebar:
-    st.markdown("### ✈️ 엔진 상태 관리 시스템")
+    st.markdown("""
+<div style="font-size:1.7rem;font-weight:800;color:#ffffff;letter-spacing:0.01em;
+            text-shadow:0 2px 6px rgba(0,0,0,0.18);padding:8px 0 4px 0;line-height:1.3;">
+    ✈️ 엔진 상태 관리 시스템
+</div>
+""", unsafe_allow_html=True)
     st.markdown("---")
  
     # 내부적으로만 사용 (정비사에게 노출 최소화)
@@ -2001,7 +2006,6 @@ with tab_history:
         s2.metric("마지막 점검일",  last_date)
         s3.metric("정기점검 횟수",  f"{regular_cnt}회")
         s4.metric("🚨 긴급점검 횟수", f"{urgent_cnt}회")
-        st.markdown("---")
 
     # ── 이력 목록 ──
     type_css = {"정기점검": "type-regular", "긴급점검": "type-urgent", "일상점검": "type-check"}
@@ -2022,6 +2026,7 @@ with tab_history:
         st.info("등록된 점검 이력이 없습니다.")
  
     # ── 신규 기록 추가 ──
+    st.markdown('<div style="margin-top:40px;"></div>', unsafe_allow_html=True)
     st.markdown('<p class="section-header">점검 기록 추가</p>', unsafe_allow_html=True)
     with st.form("add_history_form", clear_on_submit=True):
         fc1, fc2, fc3 = st.columns([1.2, 1.2, 2])
@@ -2045,7 +2050,7 @@ with tab_history:
             st.rerun()
  
     # ── AI 이력 기반 분석 ──
-    st.markdown("---")  # ← 이 줄 추가
+    st.markdown('<div style="margin-top:36px;"></div>', unsafe_allow_html=True)
     st.markdown('<p class="section-header">AI 점검 이력 분석</p>', unsafe_allow_html=True)
     if st.button("🤖 이 엔진의 점검 패턴 분석해줘", use_container_width=True):
         history_text = "\n".join([f"{r['date']} {r['type']}: {r['note']} (담당:{r['by']})" for r in records])
@@ -2059,7 +2064,7 @@ with tab_history:
                 except Exception as e:
                     st.error(f"오류: {e}")
 
-    st.markdown("---")  # ← 이 줄 추가
+    st.markdown('<div style="margin-top:36px;"></div>', unsafe_allow_html=True)
     st.markdown('<p class="section-header">즉시 점검 접수 및 이력 관리</p>', unsafe_allow_html=True)
     st.caption("잔여 수명 30사이클 미만 엔진의 점검을 일괄 접수하고 기록합니다.")
 
@@ -2137,7 +2142,7 @@ with tab_history:
                             st.rerun()
 
         # ── 접수 이력 ──
-        st.markdown("---")
+        st.markdown('<div style="margin-top:36px;"></div>', unsafe_allow_html=True)
         st.markdown('<p class="section-header">📂 접수 이력</p>', unsafe_allow_html=True)
 
         if st.session_state.inspection_records:
