@@ -34,7 +34,7 @@
 
 ---
 
-## 📊 데이터셋 소개
+## 데이터셋 소개
 
 ### CMAPSS (Commercial Modular Aero-Propulsion System Simulation)
 
